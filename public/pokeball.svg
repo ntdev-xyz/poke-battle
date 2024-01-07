@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100" height="100">
+  <!-- Red left half circle -->
+  <path d="M0 100 A100 100 0 0 1 200 100" fill="#d00000" />
+
+  <!-- White right half circle (rotated 180º) -->
+  <path d="M200 100 A100 100 0 0 0 0 100" fill="#fff" transform="rotate(180 100 100)" />
+
+  <!-- Middle line -->
+  <line x1="200" y1="100" x2="0" y2="100" stroke="#000" stroke-width="10" />
+
+  <!-- white circle in the middle -->
+  <circle cx="100" cy="100" r="20" fill="#fff" stroke="#000" stroke-width="10" />
+
+    <!-- tiny white circle in the middle -->
+  <circle cx="100" cy="100" r="8" fill="#fff" stroke="#000" stroke-width="2" />
+</svg>
