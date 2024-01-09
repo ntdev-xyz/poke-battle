@@ -10,14 +10,21 @@ function Battle(): React.ReactElement {
 
     const [clientSocket, setClientSocket] = useState(socket)
     const [isLoading, setIsLoading] = useState(true)
+    const [room, setRoom] = useState()
     const [pokemons, setPokemons] = useState({
         pokemons: [
             {
                 "name": "pikachu",
-                "stats": [
+                "baseStats": [
                     {
                         "name": "hp",
                         "baseStat": 50
+                    },
+                ],
+                "stats": [
+                    {
+                        "name": "hp",
+                        "stat": 50
                     },
                 ],
                 "types": [
@@ -25,7 +32,10 @@ function Battle(): React.ReactElement {
                         "name": "electric"
                     }
                 ],
-                "image": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png"
+                "image": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png",
+                "imageShiny": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/25.png",
+                "level": 1,
+                "isShiny": true
             },
         ]
     })
@@ -39,6 +49,15 @@ function Battle(): React.ReactElement {
             setIsLoading(false)
             console.log(pokemons)
         });
+
+        socket.on('subscribedTo', (room) => {
+            setRoom(room)
+            console.log(`Subscribed to ${room}`)
+        })
+
+        socket.on('battleOutcome', (outcome) => {
+
+        })
 
     }, [])
 
@@ -70,12 +89,17 @@ function Battle(): React.ReactElement {
         );
     }
 
+    const handleSelectedPokemon = (pokemon: string) => {
+        console.log(`selected: ${pokemon}`)
+        socket.emit("selectedPokemon", {pokemon, room})
+    }
+
     return (
         <>
-            <Flex gap="3" direction="column">
+            <Flex gap="3">
                 {pokemons?.pokemons.map(pokemonData => {
                     return (
-                        <PokemonCard data={pokemonData} />
+                        <PokemonCard data={pokemonData} callback={handleSelectedPokemon} />
                     )
                 })}
             </Flex>

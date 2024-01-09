@@ -1,10 +1,20 @@
-import React from 'react';
-import { Card, Flex } from '@radix-ui/themes';
+import React, { useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
+import { Badge, Card, Flex, Text } from '@radix-ui/themes';
+import { capitalizeFirstLetter } from '@/utils/stringFunctions';
+import { motion, useAnimation, useMotionValue } from 'framer-motion';
+import { StarFilledIcon } from '@radix-ui/react-icons'
 
-interface Stat {
+interface baseStat {
     name: string;
     baseStat: number;
 }
+
+interface Stat {
+    name: string;
+    stat: number;
+}
+
 
 interface Type {
     name: string;
@@ -12,13 +22,56 @@ interface Type {
 
 interface Pokemon {
     name: string;
+    baseStats: baseStat[];
     stats: Stat[];
     types: Type[];
     image: string;
+    imageShiny: string;
+    level: number;
+    isShiny: boolean;
 }
 
 interface PokemonCardProps {
     data: Pokemon;
+    callback: Function;
+}
+
+const normalizeBaseStat = (stat: string) => {
+    switch (stat) {
+        case 'baseHp':
+            return 'Health'
+        case 'baseAttack':
+            return 'Attack'
+        case 'baseDefense':
+            return 'Defense'
+        case 'baseSpecialAttack':
+            return 'Special Attack'
+        case 'baseSpecialDefense':
+            return 'Special Defense'
+        case 'baseSpeed':
+            return 'Speed'
+        default:
+            return ""
+    }
+}
+
+const normalizeStat = (stat: string) => {
+    switch (stat) {
+        case 'hp':
+            return 'Health'
+        case 'attack':
+            return 'Attack'
+        case 'defense':
+            return 'Defense'
+        case 'specialAttack':
+            return 'Special Attack'
+        case 'specialDefense':
+            return 'Special Defense'
+        case 'speed':
+            return 'Speed'
+        default:
+            return ""
+    }
 }
 
 const getTypeColor = (type: string): string => {
@@ -76,25 +129,125 @@ const getBackgroundColor = (types: Type[]): string => {
     return `linear-gradient(110deg, ${getTypeColor(types[0].name)} 50%, ${getTypeColor(types[1].name)} 51%)`;
 };
 
-const PokemonCard: React.FC<PokemonCardProps> = ({ data }) => {
+const AnimatedCard = motion(Card);
+
+const PokemonCard: React.FC<PokemonCardProps> = ({ data, callback } ) => {
     const background = getBackgroundColor(data.types);
 
+    const [selected, setSelected] = useState(false)
+
+    const cardVariants = {
+        hover: {
+            scale: 1.1,
+            zIndex: 2, // Higher z-index when hovered
+            transition: {
+                type: 'spring',
+                stiffness: 300,
+                damping: 20,
+            },
+        },
+        initial: {
+            zIndex: 1, // Default z-index when not hovered
+        },
+        active: {
+            scale: 1.1,
+            zIndex: 3
+        },        
+    };
+
+    const outlineVariants = {
+        sparkly: {
+            scale: [1, 1.1, 1],
+            transition: {
+                repeat: Infinity,
+                duration: 0.5,
+                ease: 'easeInOut',
+            },
+            zIndex: 3
+        },
+        initial: {
+            scale: 1,
+            zIndex: 1
+        }
+    };
+
+    const outlineControls = useAnimation();
+
+    const handleCardClick = () => {
+        setSelected(!selected);
+    };
+
+    const cardRef = useRef<HTMLDivElement | null>(null); // Explicitly
+
+    const handleClickOutside = (event: MouseEvent) => {
+        if (cardRef.current && !cardRef.current.contains(event.target as Node)) {
+            setSelected(false);
+        }
+    };
+
+    useEffect(() => {
+        if (selected) {
+            callback(data.name)
+            outlineControls.start('sparkly');
+        } else {
+            callback("")
+            outlineControls.stop();
+        }
+    }, [selected, outlineControls]);
+
+    useEffect(() => {
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
     return (
-        // <Card className="pokemon-card" style={{ width: 200, padding: 16, background }}>
-        <Card style={{ width: 200, padding: 16, background }}>
-            <h3>{data.name}</h3>
-            {data.types.map((type) => (
-                <h4 key={type.name}>{type.name}</h4>
-            ))}
-            <img src={data.image} alt={data.name} style={{ width: '100%', marginBottom: 8 }} />
-            <ul>
+        <motion.div
+            // variants={outlineVariants}
+            // animate={outlineControls}
+            style={{outline: selected ? '2px solid gold' : 'none'}}
+            initial="initial"
+        >
+        <AnimatedCard
+            ref={cardRef}
+            id={`pokemon-card-${data.name}`}
+            style={{ width: 340, 
+                padding: 10, 
+                background
+            }}
+            variants={cardVariants}
+            whileHover="hover"
+            initial="initial"
+            animate={selected ? 'active' : 'initial'}
+            onClick={handleCardClick}
+        >
+            <Text size="3" weight="bold">{capitalizeFirstLetter(data.name.split("-",99)[0])}{data.isShiny && <> <StarFilledIcon color="gold" style={{display: "inline-block"}} /></>}</Text>
+            <Flex gap="1" p="2">
+                {data.types.map((type) => (
+                    <Badge variant="outline" radius="full" style={{ backgroundColor: getTypeColor(type.name) }} key={type.name}>
+                        <Text weight="bold" style={{ color: getTypeColor(type.name), filter: "invert(100%)" }}>
+                            {capitalizeFirstLetter(type.name)}
+                        </Text>
+                    </Badge>
+                ))}
+            </Flex>
+            <Card style={{ width: 295, padding: 5 }}>
+                <Image src={data.isShiny && data.imageShiny ? data.imageShiny : data.image} alt={data.name} width={290} height={290} />
+            </Card>
+            {/* <img src={data.image} alt={data.name} style={{ width: '100%', marginBottom: 8 }} /> */}
+            <ul className="pt-3">
                 {data.stats.map((stat) => (
-                    <li key={stat.name}>
-                        {stat.name}: {stat.baseStat}
+                    <li className="outline outline-1 rounded-xl mb-2" key={stat.name}>
+                        <Flex gap="1" justify="between" pl="3" pr="3">
+                            <Text weight="bold">{normalizeStat(stat.name)}</Text>
+                            <Text weight="bold">{stat.stat}</Text>
+                        </Flex>
                     </li>
                 ))}
             </ul>
-        </Card>
+        </AnimatedCard>
+        </motion.div>
     );
 };
 
