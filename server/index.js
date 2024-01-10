@@ -84,12 +84,14 @@ io.on("connection", (socket) => {
     /*     // Get the list of rooms for this socket
         const rooms = io.sockets.adapter.rooms.get(socket.id); */
 
-    console.log(`${socket.id} selected ${pokemon} on ${room}`);
+    console.log(`${clientUsernames[socket.id]} selected ${pokemon.name} on ${room}`);
 
     selectedPokemon[socket.id] = pokemon;
 
     // Check if both clients in the room have selected their Pokémon
     const [client1, client2] = Object.keys(selectedPokemon);
+
+    console.log(`client1 pokemon: ${selectedPokemon[client1]} // client2 pokemon: ${selectedPokemon[client2]}`)
 
     if (selectedPokemon[client1] && selectedPokemon[client2]) {
       initiateBattle(client1, client2, room);
@@ -98,6 +100,7 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     console.log("Client disconnected");
+    delete clientUsernames[socket.id]
     // Remove the disconnected socket from the clients array
     const index = clients.indexOf(socket);
     if (index !== -1) {
@@ -115,7 +118,7 @@ const initiateBattle = async (client1, client2, room) => {
   // Implement your battle logic here
   // You can access the selected Pokémon using client1.selectedPokemon and client2.selectedPokemon
   // Send battle results to clients using io.to(client1.id).emit() and io.to(client2.id).emit()
-  console.log("Battle initiated!");
+  console.log(`Battle initiated on ${room}!`);
   console.log(clientUsernames)
 
   const input = {
@@ -148,12 +151,15 @@ const initiateBattle = async (client1, client2, room) => {
       }
     }
   };
-
+  
   console.log({input})
+
+  io.to(room).emit("battleInitiated", input)
 
   try {
     const response = await geminiGenerateResponse(input)
-    console.log(response)
+    const cleanResponse = response.replace(/```JSON|```|\n/g, '');
+    console.log(cleanResponse)
 
   /*   // Random winner - TEMPORARY
     const randomWinner = Math.floor(Math.random() * 100) + 1
@@ -167,7 +173,7 @@ const initiateBattle = async (client1, client2, room) => {
     } */
 
     // Send the outcome to the room subscribers
-    io.to(room).emit("battleOutcome", response)
+    io.to(room).emit("battleOutcome", cleanResponse)
   } catch (error) {
     console.error('Error generating response: ', error)
   }

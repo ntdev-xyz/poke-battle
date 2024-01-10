@@ -37,8 +37,6 @@ const {
       },
     ];
 
-
-  console.log(JSON.stringify(input))
 /*   const parts = [
     { text: "Simulate an official Pokemon battle. Will return the winner of the battle and the remaining HP of the winner. Remaining HP should not be greater than the provided HP. The pokemons could be the same, so provide which player has won. Use the JSON format given below. " + outputFormat},
     { text: JSON.stringify(input) },  // Add the new input JSON here
@@ -59,9 +57,8 @@ const {
   });
 
   const response = result.response;
-  console.log(response.text());
 
-  return response
+  return response.text() 
   }
   
   module.exports = { geminiGenerateResponse };

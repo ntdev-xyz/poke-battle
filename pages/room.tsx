@@ -5,7 +5,7 @@ import { useAppDispatch, useAppSelector } from '@/app/hooks/redux';
 import { addMessage } from '@/app/hooks/messagesSlice';
 import RoomLayout from '@/app/components/roomLayout';
 import ButtonConnect from '@/app/components/buttonConnect'
-import { TextField, Button, TextFieldInput, Flex, Card } from '@radix-ui/themes';
+import { TextField, Button, TextFieldInput, Flex, Card, Select } from '@radix-ui/themes';
 import * as Toast from '@radix-ui/react-toast';
 import './styles/room.css';
 
@@ -41,7 +41,7 @@ const Room = () => {
 
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
- 
+
 
     // Listen for the linkClients event
     socket.on('linkClients', (data) => {
@@ -90,8 +90,12 @@ const Room = () => {
     socket.emit('setUsername', name);
   };
 
-  const handleName = (event: React.ChangeEvent<HTMLInputElement>) => {
+/*   const handleName = (event: React.ChangeEvent<HTMLInputElement>) => {
     setName(event.target.value);
+  }; */
+
+  const handleSelectChange = (value: string) => {
+    setName(value);
   };
 
   return (
@@ -100,9 +104,16 @@ const Room = () => {
       <Card className="w-full flex">
         <div className="flex justify-center items-center p-10">
           <Flex className="w-4/6" gap="3" align="center" direction="column" justify="center">
-            <TextField.Root className="w-full">
+            {/*             <TextField.Root className="w-full">
               <TextField.Input name="name" placeholder="Username..." onChange={handleName}></TextField.Input>
-            </TextField.Root>
+            </TextField.Root> */}
+            <Select.Root onValueChange={handleSelectChange}>
+              <Select.Trigger className='w-full'/>
+              <Select.Content position="popper">
+                <Select.Item value="Red">Red</Select.Item>
+                <Select.Item value="Blue">Blue</Select.Item>
+              </Select.Content>
+            </Select.Root>
             <ButtonConnect isConnected={isConnected} handleConnect={handleConnect} />
           </Flex>
         </div>

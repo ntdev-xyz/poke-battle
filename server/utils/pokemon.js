@@ -128,8 +128,6 @@ function calculateStat(stat, baseStat, IV, EV, level) {
 }
 
 function calculateRandomStats({ level, baseHp, baseAttack, baseDefense, baseSpecialAttack, baseSpecialDefense, baseSpeed }) {
-  // level = 50
-  console.log({ level, baseHp, baseAttack, baseDefense, baseSpecialAttack, baseSpecialDefense, baseSpeed })
   const randomIV = () => {
     return Math.floor(Math.random() * 32); // Random IV between 0 and 311
   }
