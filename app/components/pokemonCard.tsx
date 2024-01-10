@@ -187,7 +187,7 @@ const PokemonCard: React.FC<PokemonCardProps> = ({ data, callback } ) => {
 
     useEffect(() => {
         if (selected) {
-            callback(data.name)
+            callback(data)
             outlineControls.start('sparkly');
         } else {
             callback("")

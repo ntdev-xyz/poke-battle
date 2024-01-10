@@ -10,6 +10,7 @@
     "server": "nodemon --env-file=.env.local server"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.1.3",
     "@radix-ui/react-icons": "^1.3.0",
     "@radix-ui/react-toast": "1.1.5",
     "@radix-ui/themes": "^2.0.3",

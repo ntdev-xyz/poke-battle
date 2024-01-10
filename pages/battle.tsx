@@ -56,7 +56,7 @@ function Battle(): React.ReactElement {
         })
 
         socket.on('battleOutcome', (outcome) => {
-
+            console.log({outcome})
         })
 
     }, [])
@@ -89,7 +89,7 @@ function Battle(): React.ReactElement {
         );
     }
 
-    const handleSelectedPokemon = (pokemon: string) => {
+    const handleSelectedPokemon = (pokemon: any) => {
         console.log(`selected: ${pokemon}`)
         socket.emit("selectedPokemon", {pokemon, room})
     }

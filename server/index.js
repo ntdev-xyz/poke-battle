@@ -1,15 +1,15 @@
 const { Server } = require("socket.io");
 const { createServer } = require("http");
 const { getPokemonData } = require('./utils/pokemon');
-const { sendRequestToOpenAI } = require('./openai');
+const { geminiGenerateResponse } = require('./googleAI');
 
-const httpServer = createServer();  
-const io = new Server(httpServer,{
-    cors: {
-      // origin: "http://localhost:3001"
-      origin: "*"
-    }
-  });
+const httpServer = createServer();
+const io = new Server(httpServer, {
+  cors: {
+    // origin: "http://localhost:3001"
+    origin: "*"
+  }
+});
 
 // Keep track of connected clients
 const clients = [];
@@ -21,6 +21,8 @@ const clientsConnected = () => {
 }
 
 const selectedPokemon = {};
+const clientUsernames = {}
+const clientPokemons = {}
 
 // Representa uma instância da conexão
 io.on("connection", (socket) => {
@@ -30,12 +32,12 @@ io.on("connection", (socket) => {
     console.log(`Username set: ${username}`);
 
     // Store the username with the socket ID (you might want to use a database for this in a real application)
-    socket.username = username;
+    clientUsernames[socket.id] = username;
 
     // Add the socket to the clients array
     clients.push(socket);
     clientsConnected()
-    socket.emit("hello",`Welcome ${socket.username}`)
+    socket.emit("hello", `Welcome ${username}`)
 
     // Check if we have two connected clients
     if (clients.length === 2) {
@@ -44,11 +46,11 @@ io.on("connection", (socket) => {
 
       // Example: Send a message from client1 to client2
       client1.rival = client2
-      client1.emit("linkClients", { message: `You are linked with ${client2.username}!`});
+      client1.emit("linkClients", { message: `You are linked with ${client2.username}!` });
 
       // Example: Send a message from client2 to client1
       client2.rival = client1
-      client2.emit("linkClients", { message: `You are linked with ${client1.username}!`});
+      client2.emit("linkClients", { message: `You are linked with ${client1.username}!` });
 
       const countRooms = serverRooms.length + 1
       const room = `room${countRooms}`
@@ -58,10 +60,12 @@ io.on("connection", (socket) => {
       setTimeout(() => {
         getPokemonData(3).then((pokemonData) => {
           client1.pokemonData = pokemonData;
+          clientPokemons[client1.id] = pokemonData;
           io.to(client1.id).emit('pokemonData', { pokemons: pokemonData });
         });
         getPokemonData(3).then((pokemonData) => {
           client2.pokemonData = pokemonData;
+          clientPokemons[client2.id] = pokemonData;
           io.to(client2.id).emit('pokemonData', { pokemons: pokemonData });
         });
 
@@ -75,11 +79,11 @@ io.on("connection", (socket) => {
   // You can handle other events or broadcast messages here
 
   // Wait for both clients to select their Pokémon
-  socket.on("selectedPokemon", ({pokemon, room}) => {
+  socket.on("selectedPokemon", ({ pokemon, room }) => {
 
-/*     // Get the list of rooms for this socket
-    const rooms = io.sockets.adapter.rooms.get(socket.id); */
-  
+    /*     // Get the list of rooms for this socket
+        const rooms = io.sockets.adapter.rooms.get(socket.id); */
+
     console.log(`${socket.id} selected ${pokemon} on ${room}`);
 
     selectedPokemon[socket.id] = pokemon;
@@ -107,40 +111,70 @@ io.on("disconnection", (socket) => {
   console.log(`${socket.id} disconnected at ${new Date().toString()}`)
 });
 
-const initiateBattle = (client1, client2, room) => {
+const initiateBattle = async (client1, client2, room) => {
   // Implement your battle logic here
   // You can access the selected Pokémon using client1.selectedPokemon and client2.selectedPokemon
   // Send battle results to clients using io.to(client1.id).emit() and io.to(client2.id).emit()
   console.log("Battle initiated!");
+  console.log(clientUsernames)
 
-/*   let request = {
-    battle: {
-      player1: {
-        pokemon: selectedPokemon[client1]
-      },
-      player2: {
-        pokemon: selectedPokemon[client2]
-      },
+  const input = {
+    "pokemon1": {
+      "trainer": clientUsernames[client1],
+      "name": selectedPokemon[client1].name,
+      "type": selectedPokemon[client1].types.map(obj => obj.name.charAt(0).toUpperCase() + obj.name.slice(1)).join('/'),
+      "level": selectedPokemon[client1].level,
+      "stats": {
+        "hp": selectedPokemon[client1].stats[0].stat,
+        "attack": selectedPokemon[client1].stats[1].stat,
+        "defense": selectedPokemon[client1].stats[2].stat,
+        "special-attack": selectedPokemon[client1].stats[3].stat,
+        "special-defense": selectedPokemon[client1].stats[4].stat,
+        "speed": selectedPokemon[client1].stats[5].stat
+      }
+    },
+    "pokemon2": {
+      "trainer": clientUsernames[client2],
+      "name": selectedPokemon[client2].name,
+      "type": selectedPokemon[client2].types.map(obj => obj.name.charAt(0).toUpperCase() + obj.name.slice(1)).join('/'),
+      "level": selectedPokemon[client2].level,
+      "stats": {
+        "hp": selectedPokemon[client2].stats[0].stat,
+        "attack": selectedPokemon[client2].stats[1].stat,
+        "defense": selectedPokemon[client2].stats[2].stat,
+        "special-attack": selectedPokemon[client2].stats[3].stat,
+        "special-defense": selectedPokemon[client2].stats[4].stat,
+        "speed": selectedPokemon[client2].stats[5].stat
+      }
     }
-  } */
+  };
 
-  // Random winner - TEMPORARY
-  const randomWinner = Math.floor(Math.random() * 100) + 1
-  let outcome
-  if (randomWinner <= 45) {
-    outcome = 'pokemon1'
-  } else if (randomWinner >= 46 & randomWinner <= 90) {
-    outcome = 'pokemon2'
-  } else {
-    outcome = 'draw'
+  console.log({input})
+
+  try {
+    const response = await geminiGenerateResponse(input)
+    console.log(response)
+
+  /*   // Random winner - TEMPORARY
+    const randomWinner = Math.floor(Math.random() * 100) + 1
+    let outcome
+    if (randomWinner <= 45) {
+      outcome = 'pokemon1'
+    } else if (randomWinner >= 46 & randomWinner <= 90) {
+      outcome = 'pokemon2'
+    } else {
+      outcome = 'draw'
+    } */
+
+    // Send the outcome to the room subscribers
+    io.to(room).emit("battleOutcome", response)
+  } catch (error) {
+    console.error('Error generating response: ', error)
   }
-
-  // Send the outcome to the room subscribers
-  io.to(room).emit("battleOutcome", outcome)
 
   // result = sendRequestToOpenAI(JSON.stringify(request));
 
-  console.log(outcome)
+  // console.log(outcome)
 };
 
 // io.listen(3000);
