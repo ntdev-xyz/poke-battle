@@ -4,37 +4,7 @@ import { Badge, Card, Flex, Text } from '@radix-ui/themes';
 import { capitalizeFirstLetter } from '@/utils/stringFunctions';
 import { motion, useAnimation, useMotionValue } from 'framer-motion';
 import { StarFilledIcon } from '@radix-ui/react-icons'
-
-interface baseStat {
-    name: string;
-    baseStat: number;
-}
-
-interface Stat {
-    name: string;
-    stat: number;
-}
-
-
-interface Type {
-    name: string;
-}
-
-interface Pokemon {
-    name: string;
-    baseStats: baseStat[];
-    stats: Stat[];
-    types: Type[];
-    image: string;
-    imageShiny: string;
-    level: number;
-    isShiny: boolean;
-}
-
-interface PokemonCardProps {
-    data: Pokemon;
-    callback: Function;
-}
+import { Type, PokemonCardProps } from '@/utils/types';
 
 const normalizeBaseStat = (stat: string) => {
     switch (stat) {
@@ -221,6 +191,11 @@ const PokemonCard: React.FC<PokemonCardProps> = ({ data, callback } ) => {
             initial="initial"
             animate={selected ? 'active' : 'initial'}
             onClick={handleCardClick}
+            size={{
+                initial: "1",
+                sm: "1",
+                xl: "1"
+            }}
         >
             <Text size="3" weight="bold">{capitalizeFirstLetter(data.name.split("-",99)[0])}{data.isShiny && <> <StarFilledIcon color="gold" style={{display: "inline-block"}} /></>}</Text>
             <Flex gap="1" p="2">

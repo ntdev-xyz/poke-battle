@@ -2,6 +2,8 @@ const { Server } = require("socket.io");
 const { createServer } = require("http");
 const { getPokemonData } = require('./utils/pokemon');
 const { geminiGenerateResponse } = require('./googleAI');
+const { writeBattleLog, newBattleLog } = require("./utils/logger");
+
 
 const httpServer = createServer();
 const io = new Server(httpServer, {
@@ -23,10 +25,17 @@ const clientsConnected = () => {
 const selectedPokemon = {};
 const clientUsernames = {}
 const clientPokemons = {}
+const clientRivals = {}
+const faintedPokemons = {}
 
 // Representa uma instância da conexão
 io.on("connection", (socket) => {
   console.log(`New connection from ${socket.id} at ${new Date().toString()}`)
+  if (clients.length >= 2) {
+    socket.disconnect(true)
+    console.log(`Disconnected ${socket.id}: Too much clients`)
+    return
+  }
   // Handle the initial connection and receive the username
   socket.on("setUsername", (username) => {
     console.log(`Username set: ${username}`);
@@ -37,6 +46,7 @@ io.on("connection", (socket) => {
     // Add the socket to the clients array
     clients.push(socket);
     clientsConnected()
+
     socket.emit("hello", `Welcome ${username}`)
 
     // Check if we have two connected clients
@@ -45,12 +55,16 @@ io.on("connection", (socket) => {
       const [client1, client2] = clients;
 
       // Example: Send a message from client1 to client2
-      client1.rival = client2
-      client1.emit("linkClients", { message: `You are linked with ${client2.username}!` });
+      clientRivals[client1] = client2
+      client1.emit("linkClients", { message: `You are linked with ${clientUsernames[client2]}!` });
 
       // Example: Send a message from client2 to client1
-      client2.rival = client1
-      client2.emit("linkClients", { message: `You are linked with ${client1.username}!` });
+      clientRivals[client2] = client1
+      client2.emit("linkClients", { message: `You are linked with ${clientUsernames[client1]}!` });
+
+      // clean up selected pokemons from the socket
+      selectedPokemon[client1] = undefined 
+      selectedPokemon[client2] = undefined
 
       const countRooms = serverRooms.length + 1
       const room = `room${countRooms}`
@@ -84,14 +98,15 @@ io.on("connection", (socket) => {
     /*     // Get the list of rooms for this socket
         const rooms = io.sockets.adapter.rooms.get(socket.id); */
 
-    console.log(`${clientUsernames[socket.id]} selected ${pokemon.name} on ${room}`);
+    console.log(`${clientUsernames[socket.id]} (${socket.id}) selected ${pokemon.name} on ${room}`);
 
     selectedPokemon[socket.id] = pokemon;
 
     // Check if both clients in the room have selected their Pokémon
-    const [client1, client2] = Object.keys(selectedPokemon);
+    // const [client1, client2] = Object.keys(selectedPokemon);
+    const [client1, client2] = Object.keys(clientUsernames);
 
-    console.log(`client1 pokemon: ${selectedPokemon[client1]} // client2 pokemon: ${selectedPokemon[client2]}`)
+    console.log(`${client1} pokemon: ${selectedPokemon[client1]?.name} // ${client2} pokemon: ${selectedPokemon[client2]?.name}`)
 
     if (selectedPokemon[client1] && selectedPokemon[client2]) {
       initiateBattle(client1, client2, room);
@@ -101,6 +116,8 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     console.log("Client disconnected");
     delete clientUsernames[socket.id]
+    delete selectedPokemon[socket.id]
+    delete clientPokemons[socket.id]
     // Remove the disconnected socket from the clients array
     const index = clients.indexOf(socket);
     if (index !== -1) {
@@ -118,8 +135,12 @@ const initiateBattle = async (client1, client2, room) => {
   // Implement your battle logic here
   // You can access the selected Pokémon using client1.selectedPokemon and client2.selectedPokemon
   // Send battle results to clients using io.to(client1.id).emit() and io.to(client2.id).emit()
+
   console.log(`Battle initiated on ${room}!`);
   console.log(clientUsernames)
+
+  io.to(client1).emit('setRivalPokemon', selectedPokemon[client2]);
+  io.to(client2).emit('setRivalPokemon', selectedPokemon[client1]);
 
   const input = {
     "pokemon1": {
@@ -157,9 +178,13 @@ const initiateBattle = async (client1, client2, room) => {
   io.to(room).emit("battleInitiated", input)
 
   try {
+    const logFile = newBattleLog({ room: room });
+    writeBattleLog({file: logFile, dataString: `Battle initiated on ${room}!`})
+    writeBattleLog({file: logFile, dataString: JSON.stringify(input, null, 2)})
     const response = await geminiGenerateResponse(input)
     const cleanResponse = response.replace(/```JSON|```|\n/g, '');
     console.log(cleanResponse)
+    writeBattleLog({file: logFile, dataString: cleanResponse})
 
   /*   // Random winner - TEMPORARY
     const randomWinner = Math.floor(Math.random() * 100) + 1
@@ -174,6 +199,37 @@ const initiateBattle = async (client1, client2, room) => {
 
     // Send the outcome to the room subscribers
     io.to(room).emit("battleOutcome", cleanResponse)
+
+    let remainingHp1 = input.pokemon1.stats.hp
+    let remainingHp2 = input.pokemon2.stats.hp
+    const battleLog = cleanResponse && cleanResponse.battleLog;
+    if (battleLog) {
+      battleLog.forEach((item) => {
+        remainingHp1 = remainingHp1 + item.pokemon1HPLost
+        remainingHp2 = remainingHp2 + item.pokemon2HPLost
+      })
+
+      const winner = cleanResponse.winner
+
+      io.to(client1).emit('battleFinish', { myHp: remainingHp1, rivalHp: remainingHp2,  winner: winner === clientUsernames[client1]});
+      io.to(client2).emit('battleFinish', { myHp: remainingHp2, rivalHp: remainingHp1,  winner: winner === clientUsernames[client2]});
+  
+      // update HP in pokemon list
+      clientPokemons[client1].pokemons.forEach((pokemon, index) => {
+        if (pokemon.name == selectedPokemon[client1].name) {
+          pokemon.stats.hp = remainingHp1
+          console.log(clientPokemons[client1].pokemons[index])
+        }
+      })
+  
+      clientPokemons[client2].pokemons.forEach((pokemon, index) => {
+        if (pokemon.name == selectedPokemon[client2].name) {
+          pokemon.stats.hp = remainingHp1
+          console.log(clientPokemons[client2].pokemons[index])
+        }
+      })
+    }    
+
   } catch (error) {
     console.error('Error generating response: ', error)
   }

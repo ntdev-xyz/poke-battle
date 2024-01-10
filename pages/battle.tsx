@@ -2,45 +2,21 @@ import { socket } from '@/server/socket';
 import router from 'next/router';
 import { useEffect, useState } from 'react';
 import PokemonCard from '@/app/components/pokemonCard';
-import { Container, Flex, Text } from '@radix-ui/themes';
+import { Container, Flex, Text, Grid } from '@radix-ui/themes';
 import Image from 'next/image'
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import './styles/battle.css';
+import { Pokemon } from '@/utils/types';
 
 function Battle(): React.ReactElement {
 
     const [clientSocket, setClientSocket] = useState(socket)
     const [isLoading, setIsLoading] = useState(true)
-    const [room, setRoom] = useState()
+    const [room, setRoom] = useState<string>()
     const [awaitingServer, setAwaitingServer] = useState(false)
-    const [pokemons, setPokemons] = useState({
-        pokemons: [
-            {
-                "name": "pikachu",
-                "baseStats": [
-                    {
-                        "name": "hp",
-                        "baseStat": 50
-                    },
-                ],
-                "stats": [
-                    {
-                        "name": "hp",
-                        "stat": 50
-                    },
-                ],
-                "types": [
-                    {
-                        "name": "electric"
-                    }
-                ],
-                "image": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png",
-                "imageShiny": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/25.png",
-                "level": 1,
-                "isShiny": true
-            },
-        ]
-    })
+    const [chosenPokemon, setChosenPokemon] = useState<Pokemon>()
+    const [rivalPokemon, setRivalPokemon] = useState<Pokemon>()
+    const [pokemons, setPokemons] = useState<{ pokemons: Pokemon[] }>()
 
     useEffect(() => {
         // back to room if disconnected
@@ -58,21 +34,23 @@ function Battle(): React.ReactElement {
         })
 
         socket.on('battleInitiated', (data) => {
-            setAwaitingServer(true)
-            console.log('Server initiated battle');
-            console.log('Current state (before update):', { awaitingServer });
             setAwaitingServer(true);
-            console.log('Current state (after update):', { awaitingServer });
         })
 
         socket.on('battleOutcome', (outcome) => {
-            console.log('Battle outcome received:', outcome);
-            console.log('Current state (before update):', { awaitingServer });
             setAwaitingServer(false);
-            console.log('Current state (after update):', { awaitingServer });
         })
 
-        console.log({awaitingServer})
+        socket.on('battleFinish', ({ myHp, rivalHp, winner }) => {
+            console.log({myHp, rivalHp, winner})
+            setAwaitingServer(false);
+
+        })
+
+        socket.on('setRivalPokemon', (pokemon: Pokemon) => {
+            setRivalPokemon(pokemon)
+            console.log(`Rival Pokemon: ${pokemon.name}`)
+        })
 
         return () => {
             // Clean up event listeners when component unmounts
@@ -80,6 +58,8 @@ function Battle(): React.ReactElement {
             socket.off('subscribedTo');
             socket.off('battleInitiated');
             socket.off('battleOutcome');
+            socket.off('setRivalPokemon');
+            socket.off('battleFinish');
             console.log('Socket event listeners removed');
         };
 
@@ -113,33 +93,115 @@ function Battle(): React.ReactElement {
         );
     }
 
-    const handleSelectedPokemon = (pokemon: any) => {
+    const handleSelectedPokemon = (pokemon: Pokemon) => {
+        setChosenPokemon(pokemon)
         console.log(`selected: ${pokemon.name}`)
         socket.emit("selectedPokemon", { pokemon, room })
     }
 
+    const PlayerAnimatedPokemonCard = ({ pokemon }: { pokemon: Pokemon }) => {
+        const controls = useAnimation();
+
+        // Animation sequence
+        const animateSequence = async () => {
+            // Step 1: Soft spring motion
+            await controls.start({ scale: 1.2, opacity: 1, transition: { duration: 0.5, type: "spring", stiffness: 200 } });
+
+            // Step 2: Move to the left
+            await controls.start({ x: "-50%", transition: { duration: 0.5 } });
+
+            // Step 3: Another component appears on the right
+            // Add additional animation steps as needed
+
+            // For example, you can add a third animation step here
+            // await controls.start({ opacity: 0.5, x: "50%", transition: { duration: 0.5 } });
+        };
+
+        // Trigger animation on mount
+        useEffect(() => {
+            animateSequence();
+        }, []); // Run the animation sequence once on mount
+
+        return (
+            <div className="z-[999]">
+                <motion.div className="zIndex" initial={{ scale: 0.8, opacity: 0 }} animate={controls}>
+                    <PokemonCard key={pokemon.name} data={pokemon} callback={() => { }} />
+                    {/* Add the second component or additional components here */}
+                    {/* <AnotherComponent key={anotherComponentData.name} data={anotherComponentData} /> */}
+                </motion.div>
+            </div>
+        );
+    };
+    
+    const RivalAnimatedPokemonCard = ({ pokemon }: { pokemon: Pokemon }) => {
+        const controls = useAnimation();
+
+        // Animation sequence
+        const animateSequence = async () => {
+
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            // Step 1: Soft spring motion
+            await controls.start({ scale: 1.2, opacity: 1, transition: { duration: 0.5, type: "spring", stiffness: 200 } });
+
+            // Step 2: Move to the left
+            await controls.start({ x: "+50%", transition: { duration: 0.5 } });
+
+            // Step 3: Another component appears on the right
+            // Add additional animation steps as needed
+
+            // For example, you can add a third animation step here
+            // await controls.start({ opacity: 0.5, x: "50%", transition: { duration: 0.5 } });
+        };
+
+        // Trigger animation on mount
+        useEffect(() => {
+            animateSequence();
+        }, []); // Run the animation sequence once on mount
+
+        return (
+            <div className="z-[999]">
+                <motion.div className="zIndex" initial={{ scale: 0.8, opacity: 0 }} animate={controls}>
+                    <PokemonCard key={pokemon.name} data={pokemon} callback={() => { }} />
+                    {/* Add the second component or additional components here */}
+                    {/* <AnotherComponent key={anotherComponentData.name} data={anotherComponentData} /> */}
+                </motion.div>
+            </div>
+        );
+    };
+
     return (
-        <Container>
-            {/* <AnimatePresence> */}
-                    <motion.div
-                        key="loading-overlay"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="overlay"
-                    >
-                        <motion.div className="loader" />
-                    </motion.div>
-            {/* </AnimatePresence> */}
+        <Grid columns={{
+            initial: "1",
+            sm: "1",
+            xl: "3"
+        }} gap="3">
+            <AnimatePresence>
+                {awaitingServer && <motion.div
+                    key="loading-overlay"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="overlay"
+                >
+                    {/* <motion.div className="loader" /> */}
+                    {chosenPokemon && rivalPokemon && (
+                        <>
+                        <PlayerAnimatedPokemonCard pokemon={chosenPokemon} />
+                        <RivalAnimatedPokemonCard pokemon={rivalPokemon} />
+                        </>
+                        )
+                    }
+                </motion.div>}
+            </AnimatePresence>
             <Flex gap="3">
-                <Text>{awaitingServer}</Text>
                 {pokemons?.pokemons.map(pokemonData => {
                     return (
                         <PokemonCard key={pokemonData.name} data={pokemonData} callback={handleSelectedPokemon} />
                     )
                 })}
             </Flex>
-        </Container>
+        </Grid>
     )
 }
 
