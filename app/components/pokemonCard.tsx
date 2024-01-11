@@ -101,13 +101,13 @@ const getBackgroundColor = (types: Type[]): string => {
 
 const AnimatedCard = motion(Card);
 
-const PokemonCard: React.FC<PokemonCardProps> = ({ data, callback } ) => {
+const PokemonCard: React.FC<PokemonCardProps> = ({ data, callback, isStatic, awaitingServer} ) => {
     const background = getBackgroundColor(data.types);
 
     const [selected, setSelected] = useState(false)
 
     const cardVariants = {
-        hover: {
+        hover:  {
             scale: 1.1,
             zIndex: 2, // Higher z-index when hovered
             transition: {
@@ -121,27 +121,10 @@ const PokemonCard: React.FC<PokemonCardProps> = ({ data, callback } ) => {
         },
         active: {
             scale: 1.1,
-            zIndex: 3
+            zIndex: 3,
+            boxShadow: "9px 9px 20px 20px #33322b40"
         },        
     };
-
-    const outlineVariants = {
-        sparkly: {
-            scale: [1, 1.1, 1],
-            transition: {
-                repeat: Infinity,
-                duration: 0.5,
-                ease: 'easeInOut',
-            },
-            zIndex: 3
-        },
-        initial: {
-            scale: 1,
-            zIndex: 1
-        }
-    };
-
-    const outlineControls = useAnimation();
 
     const handleCardClick = () => {
         setSelected(!selected);
@@ -156,14 +139,19 @@ const PokemonCard: React.FC<PokemonCardProps> = ({ data, callback } ) => {
     };
 
     useEffect(() => {
+        if (awaitingServer) {
+            setSelected(false)
+            return
+        }
+
         if (selected) {
             callback(data)
-            outlineControls.start('sparkly');
         } else {
             callback("")
-            outlineControls.stop();
         }
-    }, [selected, outlineControls]);
+
+
+    }, [selected]);
 
     useEffect(() => {
         document.addEventListener('mousedown', handleClickOutside);
@@ -173,12 +161,6 @@ const PokemonCard: React.FC<PokemonCardProps> = ({ data, callback } ) => {
     }, []);
 
     return (
-        <motion.div
-            // variants={outlineVariants}
-            // animate={outlineControls}
-            style={{outline: selected ? '2px solid gold' : 'none'}}
-            initial="initial"
-        >
         <AnimatedCard
             ref={cardRef}
             id={`pokemon-card-${data.name}`}
@@ -187,7 +169,7 @@ const PokemonCard: React.FC<PokemonCardProps> = ({ data, callback } ) => {
                 background
             }}
             variants={cardVariants}
-            whileHover="hover"
+            whileHover={!isStatic ? "hover" : undefined}
             initial="initial"
             animate={selected ? 'active' : 'initial'}
             onClick={handleCardClick}
@@ -222,7 +204,6 @@ const PokemonCard: React.FC<PokemonCardProps> = ({ data, callback } ) => {
                 ))}
             </ul>
         </AnimatedCard>
-        </motion.div>
     );
 };
 

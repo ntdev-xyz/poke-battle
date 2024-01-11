@@ -22,9 +22,12 @@ export interface Pokemon {
     imageShiny: string;
     level: number;
     isShiny: boolean;
+    isFainted?: boolean;
 }
 
 export interface PokemonCardProps {
     data: Pokemon;
     callback: Function;
+    isStatic?: boolean;
+    awaitingServer?: boolean;
 }

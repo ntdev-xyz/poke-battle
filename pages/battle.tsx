@@ -42,9 +42,8 @@ function Battle(): React.ReactElement {
         })
 
         socket.on('battleFinish', ({ myHp, rivalHp, winner }) => {
-            console.log({myHp, rivalHp, winner})
+            console.log({ myHp, rivalHp, winner })
             setAwaitingServer(false);
-
         })
 
         socket.on('setRivalPokemon', (pokemon: Pokemon) => {
@@ -94,9 +93,43 @@ function Battle(): React.ReactElement {
     }
 
     const handleSelectedPokemon = (pokemon: Pokemon) => {
+        if (awaitingServer) {
+            return
+        }
         setChosenPokemon(pokemon)
         console.log(`selected: ${pokemon.name}`)
         socket.emit("selectedPokemon", { pokemon, room })
+    }
+
+    const VersusAnimatedImage = () => {
+        const controls = useAnimation();
+
+        // Animation sequence
+        const animateSequence = async () => {
+            await new Promise(resolve => setTimeout(resolve, 4000));
+            // Soft spring motion
+            await controls.start({ scale: 1.2, opacity: 1, transition: { duration: 0.5, type: 'spring', stiffness: 200 } });
+
+            // Rotate animation
+            await controls.start({ scale: 1.7, rotate: [0, 359], transition: { duration: 1, repeat: Infinity, repeatType: 'mirror', ease: 'easeInOut' } });
+
+        }
+
+        // Trigger animation on mount
+        useEffect(() => {
+            animateSequence();
+        }, []); // Run the animation sequence once on mount
+
+        return (
+            <motion.div animate={controls} initial={{ scale: 0.1, opacity: 0 }}>
+                <Image src="/pokeball2.svg"
+                    alt="versus"
+                    width={100}
+                    height={24}
+                    priority />
+            </motion.div>
+        )
+
     }
 
     const PlayerAnimatedPokemonCard = ({ pokemon }: { pokemon: Pokemon }) => {
@@ -104,6 +137,7 @@ function Battle(): React.ReactElement {
 
         // Animation sequence
         const animateSequence = async () => {
+
             // Step 1: Soft spring motion
             await controls.start({ scale: 1.2, opacity: 1, transition: { duration: 0.5, type: "spring", stiffness: 200 } });
 
@@ -132,7 +166,7 @@ function Battle(): React.ReactElement {
             </div>
         );
     };
-    
+
     const RivalAnimatedPokemonCard = ({ pokemon }: { pokemon: Pokemon }) => {
         const controls = useAnimation();
 
@@ -162,7 +196,7 @@ function Battle(): React.ReactElement {
         return (
             <div className="z-[999]">
                 <motion.div className="zIndex" initial={{ scale: 0.8, opacity: 0 }} animate={controls}>
-                    <PokemonCard key={pokemon.name} data={pokemon} callback={() => { }} />
+                    <PokemonCard key={pokemon.name} data={pokemon} callback={() => { }} isStatic={true} />
                     {/* Add the second component or additional components here */}
                     {/* <AnotherComponent key={anotherComponentData.name} data={anotherComponentData} /> */}
                 </motion.div>
@@ -171,35 +205,55 @@ function Battle(): React.ReactElement {
     };
 
     return (
-        <Grid columns={{
-            initial: "1",
-            sm: "1",
-            xl: "3"
-        }} gap="3">
+        <Grid
+            columns={{
+                initial: "1",
+                sm: "1",
+                md: "2", // Adjust the number of columns as needed for responsiveness
+                lg: "3",
+                xl: "3",
+            }}
+            gap="3"
+        >
             <AnimatePresence>
-                {awaitingServer && <motion.div
-                    key="loading-overlay"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="overlay"
-                >
-                    {/* <motion.div className="loader" /> */}
-                    {chosenPokemon && rivalPokemon && (
-                        <>
-                        <PlayerAnimatedPokemonCard pokemon={chosenPokemon} />
-                        <RivalAnimatedPokemonCard pokemon={rivalPokemon} />
-                        </>
-                        )
-                    }
-                </motion.div>}
+                {awaitingServer && (
+                    <motion.div
+                        key="loading-overlay"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="overlay"
+                    >
+                        {chosenPokemon && rivalPokemon && (
+                            <>
+                                <PlayerAnimatedPokemonCard pokemon={chosenPokemon} />
+                                <VersusAnimatedImage />
+                                <RivalAnimatedPokemonCard pokemon={rivalPokemon} />
+                            </>
+                        )}
+                    </motion.div>
+                )}
             </AnimatePresence>
+
             <Flex gap="3">
-                {pokemons?.pokemons.map(pokemonData => {
-                    return (
-                        <PokemonCard key={pokemonData.name} data={pokemonData} callback={handleSelectedPokemon} />
-                    )
-                })}
+                {pokemons?.pokemons.map((pokemonData) => (
+                    <AnimatePresence>
+                        <motion.div
+                            initial="hidden"
+                            animate="visible"
+                            exit={{ opacity: 0 }}
+                            variants={{
+                                visible: { opacity: 1, scale: 1 },
+                                hidden: { opacity: 0, scale: 0 },
+                            }}
+                            transition={{ duration: 0.5, type: 'spring', stiffness: 200 }}
+                        >
+
+                            <PokemonCard key={pokemonData.name} data={pokemonData} callback={handleSelectedPokemon} awaitingServer={awaitingServer}/>
+                        </motion.div>
+                    </AnimatePresence>
+                ))}
+
             </Flex>
         </Grid>
     )

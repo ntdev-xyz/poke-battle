@@ -182,9 +182,10 @@ const initiateBattle = async (client1, client2, room) => {
     writeBattleLog({file: logFile, dataString: `Battle initiated on ${room}!`})
     writeBattleLog({file: logFile, dataString: JSON.stringify(input, null, 2)})
     const response = await geminiGenerateResponse(input)
-    const cleanResponse = response.replace(/```JSON|```|\n/g, '');
+    let cleanResponse = response.replace(/```JSON|```|\n/g, '');
+    cleanResponse = JSON.parse(cleanResponse)
     console.log(cleanResponse)
-    writeBattleLog({file: logFile, dataString: cleanResponse})
+    writeBattleLog({file: logFile, dataString: JSON.stringify(cleanResponse)})
 
   /*   // Random winner - TEMPORARY
     const randomWinner = Math.floor(Math.random() * 100) + 1
@@ -210,24 +211,30 @@ const initiateBattle = async (client1, client2, room) => {
       })
 
       const winner = cleanResponse.winner
+  
+      // update HP in pokemon list
+      clientPokemons[client1].forEach((pokemon, index) => {
+        if (pokemon.name == selectedPokemon[client1].name) {
+          pokemon.stats[0].stat = remainingHp1
+          if (remainingHp1 <= 0) {
+            pokemon.isFainted = true
+          }
+          console.log(clientPokemons[client1][index])
+        }
+      })
+  
+      clientPokemons[client2].forEach((pokemon, index) => {
+        if (pokemon.name == selectedPokemon[client2].name) {
+          pokemon.stats[0].stat = remainingHp2
+          if (remainingHp2 <= 0) {
+            pokemon.isFainted = true
+          }
+          console.log(clientPokemons[client2][index])
+        }
+      })
 
       io.to(client1).emit('battleFinish', { myHp: remainingHp1, rivalHp: remainingHp2,  winner: winner === clientUsernames[client1]});
       io.to(client2).emit('battleFinish', { myHp: remainingHp2, rivalHp: remainingHp1,  winner: winner === clientUsernames[client2]});
-  
-      // update HP in pokemon list
-      clientPokemons[client1].pokemons.forEach((pokemon, index) => {
-        if (pokemon.name == selectedPokemon[client1].name) {
-          pokemon.stats.hp = remainingHp1
-          console.log(clientPokemons[client1].pokemons[index])
-        }
-      })
-  
-      clientPokemons[client2].pokemons.forEach((pokemon, index) => {
-        if (pokemon.name == selectedPokemon[client2].name) {
-          pokemon.stats.hp = remainingHp1
-          console.log(clientPokemons[client2].pokemons[index])
-        }
-      })
     }    
 
   } catch (error) {
