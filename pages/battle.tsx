@@ -5,7 +5,7 @@ import PokemonCard from '@/app/components/pokemonCard';
 import { Container, Flex, Text, Grid } from '@radix-ui/themes';
 import Image from 'next/image'
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
-import './styles/battle.css';
+import '@/styles/battle.css';
 import { Pokemon } from '@/utils/types';
 
 function Battle(): React.ReactElement {
@@ -13,10 +13,11 @@ function Battle(): React.ReactElement {
     const [clientSocket, setClientSocket] = useState(socket)
     const [isLoading, setIsLoading] = useState(true)
     const [room, setRoom] = useState<string>()
-    const [awaitingServer, setAwaitingServer] = useState(false)
+    const [awaitingServer, setAwaitingServer] = useState<boolean>(false)
     const [chosenPokemon, setChosenPokemon] = useState<Pokemon>()
     const [rivalPokemon, setRivalPokemon] = useState<Pokemon>()
-    const [pokemons, setPokemons] = useState<{ pokemons: Pokemon[] }>()
+    const [pokemons, setPokemons] = useState<{ pokemons: Pokemon[] }>({ pokemons: [] })
+    const [isFainted, setIsFainted] = useState(false)
 
     useEffect(() => {
         // back to room if disconnected
@@ -38,12 +39,15 @@ function Battle(): React.ReactElement {
         })
 
         socket.on('battleOutcome', (outcome) => {
-            setAwaitingServer(false);
+            // setAwaitingServer(false);
         })
 
-        socket.on('battleFinish', ({ myHp, rivalHp, winner }) => {
-            console.log({ myHp, rivalHp, winner })
+        socket.on('battleFinish', ({ pokemons, winner }: {pokemons: Pokemon[], winner: boolean}) => {
+            console.log({ pokemons, winner })
             setAwaitingServer(false);
+            setPokemons({pokemons})
+
+            !winner && setIsFainted(true)
         })
 
         socket.on('setRivalPokemon', (pokemon: Pokemon) => {
@@ -96,6 +100,22 @@ function Battle(): React.ReactElement {
         if (awaitingServer) {
             return
         }
+
+/* 
+        console.log({ isFainted })
+        setPokemons((prev) => {
+            const updatedPokemons = prev.pokemons.map((p) =>
+                p.name === pokemon.name
+                    ? {
+                        ...p,
+                        stats: [{ name: p.stats[0].name, stat: remainingHp === -1 ? p.stats[0].stat : remainingHp }, ...p.stats.slice(1)],
+                        isFainted: isFainted,
+                    }
+                    : p
+            );
+            console.log({updatedPokemons})
+            return { pokemons: updatedPokemons };
+        }); */
         setChosenPokemon(pokemon)
         console.log(`selected: ${pokemon.name}`)
         socket.emit("selectedPokemon", { pokemon, room })
@@ -209,7 +229,7 @@ function Battle(): React.ReactElement {
             columns={{
                 initial: "1",
                 sm: "1",
-                md: "2", // Adjust the number of columns as needed for responsiveness
+                md: "2",
                 lg: "3",
                 xl: "3",
             }}
@@ -237,7 +257,7 @@ function Battle(): React.ReactElement {
 
             <Flex gap="3">
                 {pokemons?.pokemons.map((pokemonData) => (
-                    <AnimatePresence>
+                    <AnimatePresence key={pokemonData.name}>
                         <motion.div
                             initial="hidden"
                             animate="visible"
@@ -249,7 +269,7 @@ function Battle(): React.ReactElement {
                             transition={{ duration: 0.5, type: 'spring', stiffness: 200 }}
                         >
 
-                            <PokemonCard key={pokemonData.name} data={pokemonData} callback={handleSelectedPokemon} awaitingServer={awaitingServer}/>
+                            <PokemonCard key={pokemonData.name} data={pokemonData} callback={handleSelectedPokemon} isWaiting={awaitingServer} />
                         </motion.div>
                     </AnimatePresence>
                 ))}

@@ -23,20 +23,23 @@ async function getPokemonData(count) {
 
     const level = 50;
 
+    const randomStats = calculateRandomStats({ ...allStats, level: level })
+
     const data = {
       name,
       baseStats: stats.map(statData => ({
         name: formatBaseStatsName(statData.stat.name),
         baseStat: statData.base_stat
       })),
-      stats: calculateRandomStats({ ...allStats, level: level }),
+      stats: randomStats,
       types: types.map(typeData => ({
         name: typeData.type.name
       })),
       image: sprites.other['official-artwork'].front_default,
       imageShiny: sprites.other['official-artwork'].front_shiny,
       level: level,
-      isShiny: isShiny()
+      isShiny: isShiny(),
+      maxHp: randomStats[0].stat
     }
 
     return data;

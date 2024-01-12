@@ -63,7 +63,7 @@ io.on("connection", (socket) => {
       client2.emit("linkClients", { message: `You are linked with ${clientUsernames[client1]}!` });
 
       // clean up selected pokemons from the socket
-      selectedPokemon[client1] = undefined 
+      selectedPokemon[client1] = undefined
       selectedPokemon[client2] = undefined
 
       const countRooms = serverRooms.length + 1
@@ -146,7 +146,8 @@ const initiateBattle = async (client1, client2, room) => {
     "pokemon1": {
       "trainer": clientUsernames[client1],
       "name": selectedPokemon[client1].name,
-      "type": selectedPokemon[client1].types.map(obj => obj.name.charAt(0).toUpperCase() + obj.name.slice(1)).join('/'),
+      "type": selectedPokemon[client1].types.map(
+        obj => obj.name.charAt(0).toUpperCase() + obj.name.slice(1)).join('/'),
       "level": selectedPokemon[client1].level,
       "stats": {
         "hp": selectedPokemon[client1].stats[0].stat,
@@ -160,7 +161,8 @@ const initiateBattle = async (client1, client2, room) => {
     "pokemon2": {
       "trainer": clientUsernames[client2],
       "name": selectedPokemon[client2].name,
-      "type": selectedPokemon[client2].types.map(obj => obj.name.charAt(0).toUpperCase() + obj.name.slice(1)).join('/'),
+      "type": selectedPokemon[client2].types.map(
+        obj => obj.name.charAt(0).toUpperCase() + obj.name.slice(1)).join('/'),
       "level": selectedPokemon[client2].level,
       "stats": {
         "hp": selectedPokemon[client2].stats[0].stat,
@@ -172,31 +174,31 @@ const initiateBattle = async (client1, client2, room) => {
       }
     }
   };
-  
-  console.log({input})
+
+  console.log({ input })
 
   io.to(room).emit("battleInitiated", input)
 
   try {
     const logFile = newBattleLog({ room: room });
-    writeBattleLog({file: logFile, dataString: `Battle initiated on ${room}!`})
-    writeBattleLog({file: logFile, dataString: JSON.stringify(input, null, 2)})
+    writeBattleLog({ file: logFile, dataString: `Battle initiated on ${room}!` })
+    writeBattleLog({ file: logFile, dataString: JSON.stringify(input, null, 2) })
     const response = await geminiGenerateResponse(input)
     let cleanResponse = response.replace(/```JSON|```|\n/g, '');
     cleanResponse = JSON.parse(cleanResponse)
     console.log(cleanResponse)
-    writeBattleLog({file: logFile, dataString: JSON.stringify(cleanResponse)})
+    writeBattleLog({ file: logFile, dataString: JSON.stringify(cleanResponse) })
 
-  /*   // Random winner - TEMPORARY
-    const randomWinner = Math.floor(Math.random() * 100) + 1
-    let outcome
-    if (randomWinner <= 45) {
-      outcome = 'pokemon1'
-    } else if (randomWinner >= 46 & randomWinner <= 90) {
-      outcome = 'pokemon2'
-    } else {
-      outcome = 'draw'
-    } */
+    /*   // Random winner - TEMPORARY
+      const randomWinner = Math.floor(Math.random() * 100) + 1
+      let outcome
+      if (randomWinner <= 45) {
+        outcome = 'pokemon1'
+      } else if (randomWinner >= 46 & randomWinner <= 90) {
+        outcome = 'pokemon2'
+      } else {
+        outcome = 'draw'
+      } */
 
     // Send the outcome to the room subscribers
     io.to(room).emit("battleOutcome", cleanResponse)
@@ -210,8 +212,15 @@ const initiateBattle = async (client1, client2, room) => {
         remainingHp2 = remainingHp2 + item.pokemon2HPLost
       })
 
+      if (remainingHp1 < 0) {
+        remainingHp1 = 0
+      }
+      if (remainingHp2 < 0) {
+        remainingHp2 = 0
+      }
+
       const winner = cleanResponse.winner
-  
+
       // update HP in pokemon list
       clientPokemons[client1].forEach((pokemon, index) => {
         if (pokemon.name == selectedPokemon[client1].name) {
@@ -222,7 +231,7 @@ const initiateBattle = async (client1, client2, room) => {
           console.log(clientPokemons[client1][index])
         }
       })
-  
+
       clientPokemons[client2].forEach((pokemon, index) => {
         if (pokemon.name == selectedPokemon[client2].name) {
           pokemon.stats[0].stat = remainingHp2
@@ -233,9 +242,9 @@ const initiateBattle = async (client1, client2, room) => {
         }
       })
 
-      io.to(client1).emit('battleFinish', { myHp: remainingHp1, rivalHp: remainingHp2,  winner: winner === clientUsernames[client1]});
-      io.to(client2).emit('battleFinish', { myHp: remainingHp2, rivalHp: remainingHp1,  winner: winner === clientUsernames[client2]});
-    }    
+      io.to(client1).emit('battleFinish', { pokemons: clientPokemons[client1], winner: winner === clientUsernames[client1] });
+      io.to(client2).emit('battleFinish', { pokemons: clientPokemons[client2], winner: winner === clientUsernames[client2] });
+    }
 
   } catch (error) {
     console.error('Error generating response: ', error)

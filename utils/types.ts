@@ -23,11 +23,12 @@ export interface Pokemon {
     level: number;
     isShiny: boolean;
     isFainted?: boolean;
+    maxHp: number;
 }
 
 export interface PokemonCardProps {
     data: Pokemon;
     callback: Function;
     isStatic?: boolean;
-    awaitingServer?: boolean;
+    isWaiting?: boolean;
 }
