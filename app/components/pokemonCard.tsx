@@ -6,7 +6,7 @@ import { motion, useAnimation, useMotionValue } from 'framer-motion';
 import { StarFilledIcon } from '@radix-ui/react-icons'
 import { Type, PokemonCardProps, Stat } from '@/utils/types';
 import * as Progress from '@radix-ui/react-progress';
-import '@/styles/pokemonCard.css'
+import '@/pages/styles/pokemonCard.css'
 
 const normalizeBaseStat = (stat: string) => {
     switch (stat) {
