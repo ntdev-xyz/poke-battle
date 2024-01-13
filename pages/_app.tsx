@@ -11,8 +11,11 @@ const App: React.FC<AppProps> = ({ Component, pageProps }) => {
     <Provider store={store}>
       {/* <Theme appearance="dark"> */}
       <Theme appearance="light">
-        <Flex align="center" justify="center" style={{ height: '100vh' }}>
-          <Container p="5" size="3">
+        <Flex align="center" justify="center">
+          <Container p="5" size={{
+            initial: "1",
+            md: "4"
+          }}>
             <Component {...pageProps} />
           </Container>
         </Flex>

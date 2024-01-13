@@ -160,8 +160,14 @@ const PokemonCard: React.FC<PokemonCardProps> = ({ data, callback, isStatic, isW
     }, []);
 
     const HPBar = ({ stat, totalHp }: { stat: Stat, totalHp: number }) => {
-        const [hp, setHp] = useState<number>(stat.stat)
+        const [hp, setHp] = useState<number>(0)
         const [maxHp, setMaxHp] = useState<number>(totalHp)
+
+        useEffect(() => {
+            if (stat.stat !== hp) {
+                setHp(stat.stat);
+            }
+        },[stat.stat, hp])
 
         return (
             <li className="outline outline-1 rounded-xl mb-2" key={stat.name}>
@@ -180,54 +186,54 @@ const PokemonCard: React.FC<PokemonCardProps> = ({ data, callback, isStatic, isW
 
     return (
         <div className={data.isFainted ? "grayed-out-div" : ''} >
-        <AnimatedCard
-            ref={cardRef}
-            id={`pokemon-card-${data.name}`}
-            style={{
-                width: 340,
-                padding: 10,
-                background
-            }}
-            variants={cardVariants}
-            whileHover={!isStatic ? "hover" : undefined}
-            initial="initial"
-            animate={selected ? 'active' : 'initial'}
-            onClick={handleCardClick}
-            size={{
-                initial: "1",
-                sm: "1",
-                xl: "1"
-            }}
-        >
-            {/* .split("-",99) */}
-            <Text size="3" weight="bold">{data.name.split("-", 99).map(word => { return capitalizeFirstLetter(word) }).join("-")}{data.isShiny && <> <StarFilledIcon color="gold" style={{ display: "inline-block" }} /></>}</Text>
-            <Flex gap="1" p="2">
-                {data.types.map((type) => (
-                    <Badge variant="outline" radius="full" style={{ backgroundColor: getTypeColor(type.name) }} key={type.name}>
-                        <Text weight="bold" style={{ color: getTypeColor(type.name), filter: "invert(100%)" }}>
-                            {capitalizeFirstLetter(type.name)}
-                        </Text>
-                    </Badge>
-                ))}
-            </Flex>
-            <Card style={{ width: 295, padding: 5 }}>
-                <Image src={data.isShiny && data.imageShiny ? data.imageShiny : data.image} alt={data.name} width={290} height={290} />
-            </Card>
-            {/* <img src={data.image} alt={data.name} style={{ width: '100%', marginBottom: 8 }} /> */}
-            <ul className="pt-3">
-                {data.stats.map((stat) => (
-                    stat.name === 'hp' ? (
-                        <HPBar stat={stat} totalHp={data.maxHp} />
-                    ) :
-                        (<li className="outline outline-1 rounded-xl mb-2" key={stat.name}>
-                            <Flex gap="1" justify="between" pl="3" pr="3">
-                                <Text weight="bold">{normalizeStat(stat.name)}</Text>
-                                <Text weight="bold">{stat.stat}</Text>
-                            </Flex>
-                        </li>)
-                ))}
-            </ul>
-        </AnimatedCard>
+            <AnimatedCard
+                ref={cardRef}
+                id={`pokemon-card-${data.name}`}
+                style={{
+                    width: 340,
+                    padding: 10,
+                    background
+                }}
+                variants={cardVariants}
+                whileHover={!isStatic ? "hover" : undefined}
+                initial="initial"
+                animate={selected ? 'active' : 'initial'}
+                onClick={handleCardClick}
+                size={{
+                    initial: "1",
+                    sm: "1",
+                    xl: "1"
+                }}
+            >
+                {/* .split("-",99) */}
+                <Text size="3" weight="bold">{data.name.split("-", 99).map(word => { return capitalizeFirstLetter(word) }).join("-")}{data.isShiny && <> <StarFilledIcon color="gold" style={{ display: "inline-block" }} /></>}</Text>
+                <Flex gap="1" p="2">
+                    {data.types.map((type) => (
+                        <Badge variant="outline" radius="full" style={{ backgroundColor: getTypeColor(type.name) }} key={type.name}>
+                            <Text weight="bold" style={{ color: getTypeColor(type.name), filter: "invert(100%)" }}>
+                                {capitalizeFirstLetter(type.name)}
+                            </Text>
+                        </Badge>
+                    ))}
+                </Flex>
+                <Card style={{ width: 295, padding: 5 }}>
+                    <Image src={data.isShiny && data.imageShiny ? data.imageShiny : data.image} alt={data.name} width={290} height={290} />
+                </Card>
+                {/* <img src={data.image} alt={data.name} style={{ width: '100%', marginBottom: 8 }} /> */}
+                <ul className="pt-3">
+                    {data.stats.map((stat) => (
+                        stat.name === 'hp' ? (
+                            <HPBar stat={stat} totalHp={data.maxHp} />
+                        ) :
+                            (<li className="outline outline-1 rounded-xl mb-2" key={stat.name}>
+                                <Flex gap="1" justify="between" pl="3" pr="3">
+                                    <Text weight="bold">{normalizeStat(stat.name)}</Text>
+                                    <Text weight="bold">{stat.stat}</Text>
+                                </Flex>
+                            </li>)
+                    ))}
+                </ul>
+            </AnimatedCard>
         </div>
     );
 };

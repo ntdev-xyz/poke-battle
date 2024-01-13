@@ -1,12 +1,14 @@
 import { socket } from '@/server/socket';
 import router from 'next/router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import PokemonCard from '@/app/components/pokemonCard';
-import { Container, Flex, Text, Grid } from '@radix-ui/themes';
+import { Container, Flex, Text, Grid, Heading, Box } from '@radix-ui/themes';
 import Image from 'next/image'
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
-import '@/styles/battle.css';
 import { Pokemon } from '@/utils/types';
+import Lottie from "lottie-react";
+import squirtle from '@/lotties/squirtle.json'
+import '@/pages/styles/battle.css';
 
 function Battle(): React.ReactElement {
 
@@ -18,6 +20,7 @@ function Battle(): React.ReactElement {
     const [rivalPokemon, setRivalPokemon] = useState<Pokemon>()
     const [pokemons, setPokemons] = useState<{ pokemons: Pokemon[] }>({ pokemons: [] })
     const [isFainted, setIsFainted] = useState(false)
+    const [winner, setWinner] = useState('')
 
     useEffect(() => {
         // back to room if disconnected
@@ -42,10 +45,10 @@ function Battle(): React.ReactElement {
             // setAwaitingServer(false);
         })
 
-        socket.on('battleFinish', ({ pokemons, winner }: {pokemons: Pokemon[], winner: boolean}) => {
+        socket.on('battleFinish', ({ pokemons, winner }: { pokemons: Pokemon[], winner: boolean }) => {
             console.log({ pokemons, winner })
             setAwaitingServer(false);
-            setPokemons({pokemons})
+            setPokemons({ pokemons })
 
             !winner && setIsFainted(true)
         })
@@ -53,6 +56,17 @@ function Battle(): React.ReactElement {
         socket.on('setRivalPokemon', (pokemon: Pokemon) => {
             setRivalPokemon(pokemon)
             console.log(`Rival Pokemon: ${pokemon.name}`)
+        })
+
+        socket.on('finish', ({ winner }: { winner: string }) => {
+            console.log(winner)
+            setWinner(winner)
+        })
+
+        socket.on('endMatch', () => {
+            console.log('Match ending in 10 seconds...')
+            socket.disconnect()
+            router.push('/room')
         })
 
         return () => {
@@ -63,6 +77,8 @@ function Battle(): React.ReactElement {
             socket.off('battleOutcome');
             socket.off('setRivalPokemon');
             socket.off('battleFinish');
+            socket.off('finish');
+            socket.off('endMatch');
             console.log('Socket event listeners removed');
         };
 
@@ -75,7 +91,8 @@ function Battle(): React.ReactElement {
     if (isLoading) {
         return (
             <div className="flex justify-center items-center p-10">
-                <motion.div
+                <Lottie animationData={squirtle} />
+                {/*                 <motion.div
                     initial={{ y: 0 }}
                     animate={{
                         y: 0,
@@ -91,7 +108,7 @@ function Battle(): React.ReactElement {
                         height={24}
                         priority
                     />
-                </motion.div>
+                </motion.div> */}
             </div>
         );
     }
@@ -100,22 +117,6 @@ function Battle(): React.ReactElement {
         if (awaitingServer) {
             return
         }
-
-/* 
-        console.log({ isFainted })
-        setPokemons((prev) => {
-            const updatedPokemons = prev.pokemons.map((p) =>
-                p.name === pokemon.name
-                    ? {
-                        ...p,
-                        stats: [{ name: p.stats[0].name, stat: remainingHp === -1 ? p.stats[0].stat : remainingHp }, ...p.stats.slice(1)],
-                        isFainted: isFainted,
-                    }
-                    : p
-            );
-            console.log({updatedPokemons})
-            return { pokemons: updatedPokemons };
-        }); */
         setChosenPokemon(pokemon)
         console.log(`selected: ${pokemon.name}`)
         socket.emit("selectedPokemon", { pokemon, room })
@@ -123,21 +124,35 @@ function Battle(): React.ReactElement {
 
     const VersusAnimatedImage = () => {
         const controls = useAnimation();
+        const isMounted = useRef(true);
 
         // Animation sequence
         const animateSequence = async () => {
-            await new Promise(resolve => setTimeout(resolve, 4000));
-            // Soft spring motion
-            await controls.start({ scale: 1.2, opacity: 1, transition: { duration: 0.5, type: 'spring', stiffness: 200 } });
+            if (isMounted.current) {
+                await new Promise(resolve => setTimeout(resolve, 4000));
+                // Soft spring motion
+                await controls.start({
+                    scale: 1.2,
+                    opacity: 1,
+                    transition: { duration: 0.5, type: 'spring', stiffness: 200 }
+                });
 
-            // Rotate animation
-            await controls.start({ scale: 1.7, rotate: [0, 359], transition: { duration: 1, repeat: Infinity, repeatType: 'mirror', ease: 'easeInOut' } });
-
+                // Rotate animation
+                await controls.start({
+                    scale: 1.7,
+                    rotate: [0, 359],
+                    transition: { duration: 1, repeat: Infinity, repeatType: 'mirror', ease: 'easeInOut' }
+                });
+            }
         }
 
         // Trigger animation on mount
         useEffect(() => {
             animateSequence();
+
+            return () => {
+                isMounted.current = false
+            }
         }, []); // Run the animation sequence once on mount
 
         return (
@@ -154,34 +169,42 @@ function Battle(): React.ReactElement {
 
     const PlayerAnimatedPokemonCard = ({ pokemon }: { pokemon: Pokemon }) => {
         const controls = useAnimation();
+        const isMounted = useRef(true);
 
         // Animation sequence
         const animateSequence = async () => {
 
-            // Step 1: Soft spring motion
-            await controls.start({ scale: 1.2, opacity: 1, transition: { duration: 0.5, type: "spring", stiffness: 200 } });
+            if (isMounted.current) {
+                // Step 1: Soft spring motion
+                await controls.start({
+                    scale: 1.2,
+                    opacity: 1,
+                    transition: {
+                        duration: 0.5, type: "spring", stiffness: 200
+                    }
+                });
 
-            // Step 2: Move to the left
-            await controls.start({ x: "-50%", transition: { duration: 0.5 } });
-
-            // Step 3: Another component appears on the right
-            // Add additional animation steps as needed
-
-            // For example, you can add a third animation step here
-            // await controls.start({ opacity: 0.5, x: "50%", transition: { duration: 0.5 } });
+                // Step 2: Move to the left
+                await controls.start({
+                    x: "-50%",
+                    transition: { duration: 0.5 }
+                });
+            }
         };
 
         // Trigger animation on mount
         useEffect(() => {
             animateSequence();
+
+            return () => {
+                isMounted.current = false
+            }
         }, []); // Run the animation sequence once on mount
 
         return (
             <div className="z-[999]">
                 <motion.div className="zIndex" initial={{ scale: 0.8, opacity: 0 }} animate={controls}>
                     <PokemonCard key={pokemon.name} data={pokemon} callback={() => { }} />
-                    {/* Add the second component or additional components here */}
-                    {/* <AnotherComponent key={anotherComponentData.name} data={anotherComponentData} /> */}
                 </motion.div>
             </div>
         );
@@ -189,28 +212,36 @@ function Battle(): React.ReactElement {
 
     const RivalAnimatedPokemonCard = ({ pokemon }: { pokemon: Pokemon }) => {
         const controls = useAnimation();
+        const isMounted = useRef(true);
 
         // Animation sequence
         const animateSequence = async () => {
 
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            if (isMounted.current) {
+                await new Promise(resolve => setTimeout(resolve, 2000));
 
-            // Step 1: Soft spring motion
-            await controls.start({ scale: 1.2, opacity: 1, transition: { duration: 0.5, type: "spring", stiffness: 200 } });
+                // Step 1: Soft spring motion
+                await controls.start({
+                    scale: 1.2,
+                    opacity: 1,
+                    transition: { duration: 0.5, type: "spring", stiffness: 200 }
+                });
 
-            // Step 2: Move to the left
-            await controls.start({ x: "+50%", transition: { duration: 0.5 } });
-
-            // Step 3: Another component appears on the right
-            // Add additional animation steps as needed
-
-            // For example, you can add a third animation step here
-            // await controls.start({ opacity: 0.5, x: "50%", transition: { duration: 0.5 } });
+                // Step 2: Move to the left
+                await controls.start({
+                    x: "+50%",
+                    transition: { duration: 0.5 }
+                });
+            }
         };
 
         // Trigger animation on mount
         useEffect(() => {
             animateSequence();
+
+            return () => {
+                isMounted.current = false
+            }
         }, []); // Run the animation sequence once on mount
 
         return (
@@ -228,13 +259,25 @@ function Battle(): React.ReactElement {
         <Grid
             columns={{
                 initial: "1",
-                sm: "1",
-                md: "2",
-                lg: "3",
-                xl: "3",
+                md: "3",
             }}
+            height="auto"
             gap="3"
-        >
+        >{winner != '' &&
+            <AnimatePresence>
+                <motion.div
+                    className="giant-message-container overlay"
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0, opacity: 0 }}
+                    transition={{ duration: 3, ease: 'easeInOut' }}
+                >
+                    <Heading size="9" weight="bold">{socket.id == winner ? 'VICTORY'
+                        : winner == 'draw' ?
+                            'DRAW' : 'DEFEAT'}
+                    </Heading>
+                </motion.div>
+            </AnimatePresence>}
             <AnimatePresence>
                 {awaitingServer && (
                     <motion.div
@@ -255,8 +298,10 @@ function Battle(): React.ReactElement {
                 )}
             </AnimatePresence>
 
-            <Flex gap="3">
-                {pokemons?.pokemons.map((pokemonData) => (
+            {/* <Flex gap="3"> */}
+
+            {pokemons?.pokemons.map((pokemonData) => (
+                <Box width="100%" height="100%">
                     <AnimatePresence key={pokemonData.name}>
                         <motion.div
                             initial="hidden"
@@ -272,9 +317,11 @@ function Battle(): React.ReactElement {
                             <PokemonCard key={pokemonData.name} data={pokemonData} callback={handleSelectedPokemon} isWaiting={awaitingServer} />
                         </motion.div>
                     </AnimatePresence>
-                ))}
+                </Box>
+            ))}
 
-            </Flex>
+
+            {/* </Flex> */}
         </Grid>
     )
 }

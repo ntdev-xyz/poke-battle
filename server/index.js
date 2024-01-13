@@ -56,11 +56,11 @@ io.on("connection", (socket) => {
 
       // Example: Send a message from client1 to client2
       clientRivals[client1] = client2
-      client1.emit("linkClients", { message: `You are linked with ${clientUsernames[client2]}!` });
+      client1.emit("linkClients", { message: `You are linked with ${clientUsernames[client2.id]}!` });
 
       // Example: Send a message from client2 to client1
       clientRivals[client2] = client1
-      client2.emit("linkClients", { message: `You are linked with ${clientUsernames[client1]}!` });
+      client2.emit("linkClients", { message: `You are linked with ${clientUsernames[client1.id]}!` });
 
       // clean up selected pokemons from the socket
       selectedPokemon[client1] = undefined
@@ -72,12 +72,12 @@ io.on("connection", (socket) => {
       client2.join(room)
 
       setTimeout(() => {
-        getPokemonData(3).then((pokemonData) => {
+        getPokemonData(6).then((pokemonData) => {
           client1.pokemonData = pokemonData;
           clientPokemons[client1.id] = pokemonData;
           io.to(client1.id).emit('pokemonData', { pokemons: pokemonData });
         });
-        getPokemonData(3).then((pokemonData) => {
+        getPokemonData(6).then((pokemonData) => {
           client2.pokemonData = pokemonData;
           clientPokemons[client2.id] = pokemonData;
           io.to(client2.id).emit('pokemonData', { pokemons: pokemonData });
@@ -184,21 +184,11 @@ const initiateBattle = async (client1, client2, room) => {
     writeBattleLog({ file: logFile, dataString: `Battle initiated on ${room}!` })
     writeBattleLog({ file: logFile, dataString: JSON.stringify(input, null, 2) })
     const response = await geminiGenerateResponse(input)
-    let cleanResponse = response.replace(/```JSON|```|\n/g, '');
+    let cleanResponse = response.replace(/```JSON|```|json|\n/g, '');
+    console.log(cleanResponse)
     cleanResponse = JSON.parse(cleanResponse)
     console.log(cleanResponse)
     writeBattleLog({ file: logFile, dataString: JSON.stringify(cleanResponse) })
-
-    /*   // Random winner - TEMPORARY
-      const randomWinner = Math.floor(Math.random() * 100) + 1
-      let outcome
-      if (randomWinner <= 45) {
-        outcome = 'pokemon1'
-      } else if (randomWinner >= 46 & randomWinner <= 90) {
-        outcome = 'pokemon2'
-      } else {
-        outcome = 'draw'
-      } */
 
     // Send the outcome to the room subscribers
     io.to(room).emit("battleOutcome", cleanResponse)
@@ -222,6 +212,7 @@ const initiateBattle = async (client1, client2, room) => {
       const winner = cleanResponse.winner
 
       // update HP in pokemon list
+      let allFainted1 = true
       clientPokemons[client1].forEach((pokemon, index) => {
         if (pokemon.name == selectedPokemon[client1].name) {
           pokemon.stats[0].stat = remainingHp1
@@ -230,8 +221,12 @@ const initiateBattle = async (client1, client2, room) => {
           }
           console.log(clientPokemons[client1][index])
         }
+        if (pokemon.isFainted == false || pokemon.isFainted == undefined) {
+          allFainted1 = false
+        }
       })
 
+      let allFainted2 = true
       clientPokemons[client2].forEach((pokemon, index) => {
         if (pokemon.name == selectedPokemon[client2].name) {
           pokemon.stats[0].stat = remainingHp2
@@ -240,10 +235,27 @@ const initiateBattle = async (client1, client2, room) => {
           }
           console.log(clientPokemons[client2][index])
         }
+        if (pokemon.isFainted == false || pokemon.isFainted == undefined) {
+          allFainted2 = false
+        }
       })
+      console.log({allFainted1}, {allFainted2})
 
       io.to(client1).emit('battleFinish', { pokemons: clientPokemons[client1], winner: winner === clientUsernames[client1] });
       io.to(client2).emit('battleFinish', { pokemons: clientPokemons[client2], winner: winner === clientUsernames[client2] });
+
+      if (allFainted1 | allFainted2) {
+        let winner = allFainted1 && allFainted2 ?
+          'draw' : allFainted1
+            ? client2 : client1
+        setTimeout(() => {
+          io.to(room).emit('finish', { winner: winner })
+        }, 200)
+        setTimeout(() => {
+          io.to(room).emit("endMatch", {})
+          io.to(room).disconnectSockets(true)
+        }, 10000)
+      }
     }
 
   } catch (error) {
