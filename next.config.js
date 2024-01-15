@@ -13,6 +13,11 @@ const nextConfig = {
             hostname: 'static.wikia.nocookie.net',
             port: '',
           },
+          {
+            protocol: 'https',
+            hostname: 'archives.bulbagarden.net',
+            port: '',
+          },
         ],
       },
 }

@@ -181,19 +181,19 @@ function Battle(): React.ReactElement {
         // Animation sequence
         const animateSequence = async () => {
             if (isMounted.current) {
-                await new Promise(resolve => setTimeout(resolve, 4000));
+                await new Promise(resolve => setTimeout(resolve, 2000));
                 // Soft spring motion
                 await controls.start({
                     scale: 1.2,
                     opacity: 1,
-                    transition: { duration: 0.5, type: 'spring', stiffness: 200 }
+                    transition: { duration: 0.2, type: 'spring', stiffness: 200 }
                 });
 
                 // Rotate animation
                 await controls.start({
                     scale: 1.7,
                     rotate: [0, 359],
-                    transition: { duration: 1, repeat: Infinity, repeatType: 'mirror', ease: 'easeInOut' }
+                    transition: { duration: 0.5, repeat: Infinity, repeatType: 'mirror', ease: 'easeInOut' }
                 });
             }
         }
@@ -233,14 +233,14 @@ function Battle(): React.ReactElement {
                     scale: 1.2,
                     opacity: 1,
                     transition: {
-                        duration: 0.5, type: "spring", stiffness: 200
+                        duration: 0.3, type: "spring", stiffness: 200
                     }
                 });
 
                 // Step 2: Move to the left
                 await controls.start({
                     x: "-50%",
-                    transition: { duration: 0.5 }
+                    transition: { duration: 0.3 }
                 });
             }
         };
@@ -272,19 +272,19 @@ function Battle(): React.ReactElement {
         const animateSequence = async () => {
 
             if (isMounted.current) {
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                await new Promise(resolve => setTimeout(resolve, 1000));
 
                 // Step 1: Soft spring motion
                 await controls.start({
                     scale: 1.2,
                     opacity: 1,
-                    transition: { duration: 0.5, type: "spring", stiffness: 200 }
+                    transition: { duration: 0.3, type: "spring", stiffness: 200 }
                 });
 
                 // Step 2: Move to the left
                 await controls.start({
                     x: "+50%",
-                    transition: { duration: 0.5 }
+                    transition: { duration: 0.3 }
                 });
             }
         };

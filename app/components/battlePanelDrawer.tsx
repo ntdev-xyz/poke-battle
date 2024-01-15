@@ -23,6 +23,25 @@ function BattlePanelDrawer({ rivalData }: { rivalData: { trainer: string, pokemo
         controlsContent.start({ display: "none" });
     };
 
+    const rivalImage = (trainer: string) => {
+        switch (trainer) {
+            case 'Red':
+                return '/FireRed_LeafGreen_Red.png'
+            case 'Blue':
+                return '/FireRed_LeafGreen_Blue.png'
+            case 'Leaf':
+                return '/FireRed_LeafGreen_Leaf.png'
+            case 'May':
+                return '/Omega_Ruby_Alpha_Sapphire_May.png'
+            case 'Ethan':
+                return '/HeartGold_SoulSilver_Ethan.png'
+            case 'Silver':
+                return '/HeartGold_SoulSilver_Silver.png'
+            default:
+                return ''
+        }
+    }
+
     return (
         <>
             <div className="fixed z-10 top-0 right-0 left-0 h-0 border-solid border-2 border-black bg-gray-100 bg-opacity-80">
@@ -36,10 +55,7 @@ function BattlePanelDrawer({ rivalData }: { rivalData: { trainer: string, pokemo
                             <Grid gap="3" columns="2" justify="end" >
                                 <Flex direction="column" align="center">
                                     <Box grow="1">
-                                        <Image src={rivalData.trainer === "Red"
-                                            ? "https://static.wikia.nocookie.net/pokemonfanon/images/c/c7/Red_%28Design_1%29.png/revision/latest?cb=20171207183300"
-                                            : "https://static.wikia.nocookie.net/pokemonfanon/images/c/cd/Blue_%28FRLG%29.png/revision/latest/scale-to-width-down/250?cb=20180114023519"
-                                        }
+                                        <Image src={rivalImage(rivalData.trainer)}
                                             alt={rivalData.trainer}
                                             width="200"
                                             height="400" />

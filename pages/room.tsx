@@ -99,6 +99,10 @@ const Room = () => {
               <Select.Content position="popper">
                 <Select.Item value="Red">Red</Select.Item>
                 <Select.Item value="Blue">Blue</Select.Item>
+                <Select.Item value="Leaf">Leaf</Select.Item>
+                <Select.Item value="May">May</Select.Item>
+                <Select.Item value="Ethan">Ethan</Select.Item>
+                <Select.Item value="Silver">Silver</Select.Item>
               </Select.Content>
             </Select.Root>
             <ButtonConnect isConnected={isConnected} handleConnect={handleConnect} />
