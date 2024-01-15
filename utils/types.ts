@@ -32,3 +32,10 @@ export interface PokemonCardProps {
     isStatic?: boolean;
     isWaiting?: boolean;
 }
+
+export interface toast {
+    type: "error" | "alert" | "notification" | "",
+    title: string,
+    message: string,
+    action: string,
+  }

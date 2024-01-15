@@ -8,13 +8,7 @@ import ButtonConnect from '@/app/components/buttonConnect'
 import { TextField, Button, TextFieldInput, Flex, Card, Select } from '@radix-ui/themes';
 import * as Toast from '@radix-ui/react-toast';
 import './styles/room.css';
-
-interface toast {
-  type: "error" | "alert" | "notification" | "",
-  title: string,
-  message: string,
-  action: string,
-}
+import { toast } from '@/utils/types';
 
 const Room = () => {
   const [isConnected, setIsConnected] = useState(socket.connected);
@@ -26,7 +20,7 @@ const Room = () => {
     message: "",
     action: "",
   });
-  const router = useRouter(); // Add this line to get the router object
+  const router = useRouter();
 
   const dispatch = useAppDispatch();
 
@@ -53,7 +47,7 @@ const Room = () => {
 
       const redirectTimeout = setTimeout(() => {
         // Redirect to the new URL after 3 seconds
-        router.push('/battle'); // Change 'your-new-page' to the desired page
+        router.push('/battle');
       }, 500);
 
       return () => clearTimeout(redirectTimeout);
@@ -65,7 +59,7 @@ const Room = () => {
       socket.off('disconnect', onDisconnect);
       //   socket.disconnect();
     };
-  }, [router]); // Add router to the dependency array
+  }, [router]);
 
   const handleConnect = () => {
     if (name === '' && !isConnected) {
@@ -90,10 +84,6 @@ const Room = () => {
     socket.emit('setUsername', name);
   };
 
-/*   const handleName = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setName(event.target.value);
-  }; */
-
   const handleSelectChange = (value: string) => {
     setName(value);
   };
@@ -104,9 +94,6 @@ const Room = () => {
       <Card className="w-full flex">
         <div className="flex justify-center items-center p-10">
           <Flex className="w-4/6" gap="3" align="center" direction="column" justify="center">
-            {/*             <TextField.Root className="w-full">
-              <TextField.Input name="name" placeholder="Username..." onChange={handleName}></TextField.Input>
-            </TextField.Root> */}
             <Select.Root onValueChange={handleSelectChange}>
               <Select.Trigger className='w-full'/>
               <Select.Content position="popper">

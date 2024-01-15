@@ -71,16 +71,20 @@ io.on("connection", (socket) => {
       client1.join(room)
       client2.join(room)
 
+      const numberPokemons = 6
+
       setTimeout(() => {
-        getPokemonData(6).then((pokemonData) => {
+        getPokemonData(numberPokemons).then((pokemonData) => {
           client1.pokemonData = pokemonData;
           clientPokemons[client1.id] = pokemonData;
           io.to(client1.id).emit('pokemonData', { pokemons: pokemonData });
+          io.to(client1.id).emit('rivalData', { trainer: clientUsernames[client2.id], pokemons: Array(numberPokemons) });
         });
-        getPokemonData(6).then((pokemonData) => {
+        getPokemonData(numberPokemons).then((pokemonData) => {
           client2.pokemonData = pokemonData;
           clientPokemons[client2.id] = pokemonData;
           io.to(client2.id).emit('pokemonData', { pokemons: pokemonData });
+          io.to(client2.id).emit('rivalData', { trainer: clientUsernames[client1.id], pokemons: Array(numberPokemons) });
         });
 
         //Broadcast room subscribed
@@ -114,7 +118,11 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    console.log("Client disconnected");
+    console.log(`Client ${socket.id} disconnected`);
+    const rival = clientRivals[socket]
+
+    rival && rival.emit("rivalDisconnection", "Rival disconnected")
+
     delete clientUsernames[socket.id]
     delete selectedPokemon[socket.id]
     delete clientPokemons[socket.id]
@@ -219,6 +227,10 @@ const initiateBattle = async (client1, client2, room) => {
           if (remainingHp1 <= 0) {
             pokemon.isFainted = true
           }
+
+          // Send information about the updated Pokemon to the rival client
+          io.to(client2).emit('rivalUpdateData', pokemon);
+
           console.log(clientPokemons[client1][index])
         }
         if (pokemon.isFainted == false || pokemon.isFainted == undefined) {
@@ -233,13 +245,17 @@ const initiateBattle = async (client1, client2, room) => {
           if (remainingHp2 <= 0) {
             pokemon.isFainted = true
           }
+
+          // Send information about the updated Pokemon to the rival client
+          io.to(client1).emit('rivalUpdateData', pokemon);
+
           console.log(clientPokemons[client2][index])
         }
         if (pokemon.isFainted == false || pokemon.isFainted == undefined) {
           allFainted2 = false
         }
       })
-      console.log({allFainted1}, {allFainted2})
+      console.log({ allFainted1 }, { allFainted2 })
 
       io.to(client1).emit('battleFinish', { pokemons: clientPokemons[client1], winner: winner === clientUsernames[client1] });
       io.to(client2).emit('battleFinish', { pokemons: clientPokemons[client2], winner: winner === clientUsernames[client2] });

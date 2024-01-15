@@ -9,6 +9,7 @@ import { Pokemon } from '@/utils/types';
 import Lottie from "lottie-react";
 import squirtle from '@/lotties/squirtle.json'
 import '@/pages/styles/battle.css';
+import BattlePanelDrawer from '@/app/components/battlePanelDrawer';
 
 function Battle(): React.ReactElement {
 
@@ -19,8 +20,35 @@ function Battle(): React.ReactElement {
     const [chosenPokemon, setChosenPokemon] = useState<Pokemon>()
     const [rivalPokemon, setRivalPokemon] = useState<Pokemon>()
     const [pokemons, setPokemons] = useState<{ pokemons: Pokemon[] }>({ pokemons: [] })
+    const [rivalData, setRivalData] = useState<{ trainer: string, pokemons: Pokemon[] }>({ trainer: "", pokemons: [] })
     const [isFainted, setIsFainted] = useState(false)
     const [winner, setWinner] = useState('')
+
+    const updateRivalData = (pokemon: Pokemon) => {
+        setRivalData((prevRivalData) => {
+            const updatedPokemons = [...prevRivalData.pokemons];
+            
+            // Find the position based on name
+            const indexToUpdateByName = updatedPokemons.findIndex((prevPokemon) => prevPokemon?.name === pokemon.name);
+    
+            if (indexToUpdateByName !== -1) {
+                // If a position based on name is found, update it
+                updatedPokemons[indexToUpdateByName] = pokemon;
+            } else {
+                // If no position based on name, find the first null position and update it
+                const indexToUpdate = updatedPokemons.findIndex((prevPokemon) => prevPokemon === null);
+    
+                if (indexToUpdate !== -1) {
+                    updatedPokemons[indexToUpdate] = pokemon;
+                }
+            }
+    
+            return {
+                trainer: prevRivalData.trainer,
+                pokemons: updatedPokemons,
+            };
+        });
+    };
 
     useEffect(() => {
         // back to room if disconnected
@@ -30,6 +58,17 @@ function Battle(): React.ReactElement {
             setPokemons(pokemons)
             setIsLoading(false)
             console.log(pokemons)
+        });
+
+        socket.on('rivalData', (pokemons) => {
+            setRivalData(pokemons)
+            console.log({ pokemons })
+        });
+
+        socket.on('rivalUpdateData', (pokemon) => {
+            updateRivalData(pokemon);
+            console.log('rival update')
+            console.log({ pokemon })
         });
 
         socket.on('subscribedTo', (room) => {
@@ -55,6 +94,8 @@ function Battle(): React.ReactElement {
 
         socket.on('setRivalPokemon', (pokemon: Pokemon) => {
             setRivalPokemon(pokemon)
+            // Update rivalData state
+            updateRivalData(pokemon);
             console.log(`Rival Pokemon: ${pokemon.name}`)
         })
 
@@ -69,9 +110,19 @@ function Battle(): React.ReactElement {
             router.push('/room')
         })
 
+        socket.on('rivalDisconnection', (message) => {
+            console.log(message)
+            setTimeout(() => {
+                socket.disconnect()
+                router.push('/room')
+            }, 1000)
+        })
+
         return () => {
             // Clean up event listeners when component unmounts
             socket.off('pokemonData');
+            socket.off('rivalData');
+            socket.off('rivalUpdateData');
             socket.off('subscribedTo');
             socket.off('battleInitiated');
             socket.off('battleOutcome');
@@ -79,6 +130,7 @@ function Battle(): React.ReactElement {
             socket.off('battleFinish');
             socket.off('finish');
             socket.off('endMatch');
+            socket.off('rivalDisconnection')
             console.log('Socket event listeners removed');
         };
 
@@ -151,6 +203,7 @@ function Battle(): React.ReactElement {
             animateSequence();
 
             return () => {
+                controls.stop()
                 isMounted.current = false
             }
         }, []); // Run the animation sequence once on mount
@@ -197,6 +250,7 @@ function Battle(): React.ReactElement {
             animateSequence();
 
             return () => {
+                controls.stop()
                 isMounted.current = false
             }
         }, []); // Run the animation sequence once on mount
@@ -240,6 +294,7 @@ function Battle(): React.ReactElement {
             animateSequence();
 
             return () => {
+                controls.stop()
                 isMounted.current = false
             }
         }, []); // Run the animation sequence once on mount
@@ -256,73 +311,78 @@ function Battle(): React.ReactElement {
     };
 
     return (
-        <Grid
-            columns={{
-                initial: "1",
-                md: "3",
-            }}
-            height="auto"
-            gap="3"
-        >{winner != '' &&
-            <AnimatePresence>
-                <motion.div
-                    className="giant-message-container overlay"
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0, opacity: 0 }}
-                    transition={{ duration: 3, ease: 'easeInOut' }}
-                >
-                    <Heading size="9" weight="bold">{socket.id == winner ? 'VICTORY'
-                        : winner == 'draw' ?
-                            'DRAW' : 'DEFEAT'}
-                    </Heading>
-                </motion.div>
-            </AnimatePresence>}
-            <AnimatePresence>
-                {awaitingServer && (
+        <>
+            <BattlePanelDrawer rivalData={rivalData} />
+            <Grid
+                columns={{
+                    initial: "1",
+                    sm: "2",
+                    md: "3",
+                }}
+                height="auto"
+                gap="3"
+
+            >{winner != '' &&
+                <AnimatePresence>
                     <motion.div
-                        key="loading-overlay"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="overlay"
+                        className="giant-message-container overlay"
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0, opacity: 0 }}
+                        transition={{ duration: 3, ease: 'easeInOut' }}
                     >
-                        {chosenPokemon && rivalPokemon && (
-                            <>
-                                <PlayerAnimatedPokemonCard pokemon={chosenPokemon} />
-                                <VersusAnimatedImage />
-                                <RivalAnimatedPokemonCard pokemon={rivalPokemon} />
-                            </>
-                        )}
+                        <Heading size="9" weight="bold">{socket.id == winner ? 'VICTORY'
+                            : winner == 'draw' ?
+                                'DRAW' : 'DEFEAT'}
+                        </Heading>
                     </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* <Flex gap="3"> */}
-
-            {pokemons?.pokemons.map((pokemonData) => (
-                <Box width="100%" height="100%">
-                    <AnimatePresence key={pokemonData.name}>
+                </AnimatePresence>}
+                <AnimatePresence>
+                    {awaitingServer && (
                         <motion.div
-                            initial="hidden"
-                            animate="visible"
+                            key="loading-overlay"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            variants={{
-                                visible: { opacity: 1, scale: 1 },
-                                hidden: { opacity: 0, scale: 0 },
-                            }}
-                            transition={{ duration: 0.5, type: 'spring', stiffness: 200 }}
+                            className="overlay"
                         >
-
-                            <PokemonCard key={pokemonData.name} data={pokemonData} callback={handleSelectedPokemon} isWaiting={awaitingServer} />
+                            {chosenPokemon && rivalPokemon && (
+                                <>
+                                    <PlayerAnimatedPokemonCard pokemon={chosenPokemon} />
+                                    <VersusAnimatedImage />
+                                    <RivalAnimatedPokemonCard pokemon={rivalPokemon} />
+                                </>
+                            )}
                         </motion.div>
-                    </AnimatePresence>
-                </Box>
-            ))}
+                    )}
+                </AnimatePresence>
+
+                {/* <Flex gap="3"> */}
+
+                {pokemons?.pokemons.map((pokemonData) => (
+                    <Box width="100%" height="100%">
+                        <AnimatePresence key={pokemonData.name}>
+                            <motion.div
+                                initial="hidden"
+                                animate="visible"
+                                exit={{ opacity: 0 }}
+                                variants={{
+                                    visible: { opacity: 1, scale: 1 },
+                                    hidden: { opacity: 0, scale: 0 },
+                                }}
+                                transition={{ duration: 0.5, type: 'spring', stiffness: 200 }}
+                            >
+
+                                <PokemonCard key={pokemonData.name} data={pokemonData} callback={handleSelectedPokemon} isWaiting={awaitingServer} />
+                            </motion.div>
+                        </AnimatePresence>
+                    </Box>
+                ))}
 
 
-            {/* </Flex> */}
-        </Grid>
+                {/* </Flex> */}
+            </Grid>
+        </>
     )
 }
 

@@ -7,6 +7,7 @@ import { StarFilledIcon } from '@radix-ui/react-icons'
 import { Type, PokemonCardProps, Stat } from '@/utils/types';
 import * as Progress from '@radix-ui/react-progress';
 import '@/pages/styles/pokemonCard.css'
+import HPBar from './hpBar';
 
 const normalizeBaseStat = (stat: string) => {
     switch (stat) {
@@ -159,7 +160,7 @@ const PokemonCard: React.FC<PokemonCardProps> = ({ data, callback, isStatic, isW
         };
     }, []);
 
-    const HPBar = ({ stat, totalHp }: { stat: Stat, totalHp: number }) => {
+/*     const HPBar = ({ stat, totalHp }: { stat: Stat, totalHp: number }) => {
         const [hp, setHp] = useState<number>(0)
         const [maxHp, setMaxHp] = useState<number>(totalHp)
 
@@ -167,7 +168,7 @@ const PokemonCard: React.FC<PokemonCardProps> = ({ data, callback, isStatic, isW
             if (stat.stat !== hp) {
                 setHp(stat.stat);
             }
-        },[stat.stat, hp])
+        }, [stat.stat, hp])
 
         return (
             <li className="outline outline-1 rounded-xl mb-2" key={stat.name}>
@@ -182,7 +183,7 @@ const PokemonCard: React.FC<PokemonCardProps> = ({ data, callback, isStatic, isW
                 </Flex>
             </li>
         )
-    }
+    } */
 
     return (
         <div className={data.isFainted ? "grayed-out-div" : ''} >
@@ -190,7 +191,7 @@ const PokemonCard: React.FC<PokemonCardProps> = ({ data, callback, isStatic, isW
                 ref={cardRef}
                 id={`pokemon-card-${data.name}`}
                 style={{
-                    width: 340,
+
                     padding: 10,
                     background
                 }}
@@ -216,14 +217,18 @@ const PokemonCard: React.FC<PokemonCardProps> = ({ data, callback, isStatic, isW
                         </Badge>
                     ))}
                 </Flex>
-                <Card style={{ width: 295, padding: 5 }}>
-                    <Image src={data.isShiny && data.imageShiny ? data.imageShiny : data.image} alt={data.name} width={290} height={290} />
+                <Card style={{ padding: 5 }}>
+                    <div className="image-container">
+                        <Image src={data.isShiny && data.imageShiny ? data.imageShiny : data.image} alt={data.name} fill={true} className="image" />
+                    </div>
                 </Card>
                 {/* <img src={data.image} alt={data.name} style={{ width: '100%', marginBottom: 8 }} /> */}
                 <ul className="pt-3">
                     {data.stats.map((stat) => (
                         stat.name === 'hp' ? (
-                            <HPBar stat={stat} totalHp={data.maxHp} />
+                            <li className="outline outline-1 rounded-xl mb-2" key={stat.name}>
+                                <HPBar stat={stat} totalHp={data.maxHp} />
+                            </li>
                         ) :
                             (<li className="outline outline-1 rounded-xl mb-2" key={stat.name}>
                                 <Flex gap="1" justify="between" pl="3" pr="3">
