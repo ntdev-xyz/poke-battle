@@ -160,31 +160,6 @@ const PokemonCard: React.FC<PokemonCardProps> = ({ data, callback, isStatic, isW
         };
     }, []);
 
-/*     const HPBar = ({ stat, totalHp }: { stat: Stat, totalHp: number }) => {
-        const [hp, setHp] = useState<number>(0)
-        const [maxHp, setMaxHp] = useState<number>(totalHp)
-
-        useEffect(() => {
-            if (stat.stat !== hp) {
-                setHp(stat.stat);
-            }
-        }, [stat.stat, hp])
-
-        return (
-            <li className="outline outline-1 rounded-xl mb-2" key={stat.name}>
-                <Flex gap="1" justify="between">
-                    <Progress.Root className="ProgressRoot" value={hp} max={maxHp}>
-                        <Progress.Indicator
-                            className="ProgressIndicator"
-                            style={{ transform: `translateX(-${100 - (hp / maxHp * 100)}%)` }}
-                        />
-                    </Progress.Root>
-                    <Text weight="bold" className="absolute pr-[20px] right-0">{`${hp} / ${maxHp}`}</Text>
-                </Flex>
-            </li>
-        )
-    } */
-
     return (
         <div className={data.isFainted ? "grayed-out-div" : ''} >
             <AnimatedCard
@@ -207,7 +182,15 @@ const PokemonCard: React.FC<PokemonCardProps> = ({ data, callback, isStatic, isW
                 }}
             >
                 {/* .split("-",99) */}
-                <Text size="3" weight="bold">{data.name.split("-", 99).map(word => { return capitalizeFirstLetter(word) }).join("-")}{data.isShiny && <> <StarFilledIcon color="gold" style={{ display: "inline-block" }} /></>}</Text>
+                <Text size="3" weight="bold">
+                    {data.name.split("-", 99).map(word => {
+                         return capitalizeFirstLetter(word) }
+                    ).join("-")}
+                    {data.isShiny && 
+                        <> 
+                            <StarFilledIcon color="gold" style={{ display: "inline-block" }} />
+                        </>}
+                </Text>
                 <Flex gap="1" p="2">
                     {data.types.map((type) => (
                         <Badge variant="outline" radius="full" style={{ backgroundColor: getTypeColor(type.name) }} key={type.name}>
