@@ -1,36 +1,77 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Poke Battle
+
+Poke Battle is a real-time web application that allows users to join a queue and battle each other in a Pokémon-style game. This project focuses on server-client communication and real-time interactions, with battle outcomes determined using Google’s Gemini AI.
+
+## Features
+
+- **Queue System:** Users join a queue and are matched with the next available opponent.
+- **Real-Time Battles:** Users battle each other in real-time.
+- **State Management:** Efficient handling of game states and user synchronization using Redux and Context API.
+- **AI Battle Outcomes:** Battle outcomes are determined using Google’s Gemini AI.
+
+## Technologies Used
+
+- **Frontend:** Next.js, TypeScript, Tailwind CSS
+- **Backend:** Node.js, Express, Socket.io for real-time communication
+- **State Management:** Redux, Context API
+- **Styling:** Tailwind CSS
+- **AI Integration:** Google’s Gemini AI
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- Node.js and npm installed
+- Gemini API Key (or just implement another model)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Installation
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Clone the repository:
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+    ```sh
+    git clone https://github.com/ntdev-xyz/poke-battle.git
+    cd poke-battle
+    ```
 
-## Learn More
+2. Install dependencies:
 
-To learn more about Next.js, take a look at the following resources:
+    ```sh
+    npm install
+    ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+3. Start the frontend server:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+    ```sh
+    npm run dev
+    ```
+    
+4. Start the backend server:
+    ```sh
+    npm run server
+    ```
 
-## Deploy on Vercel
+5. Open your browser and navigate to `http://localhost:3000`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Usage
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+1. **Joining a Queue:** Users can join the queue from the main interface.
+2. **Battling:** Once matched, users will enter a battle scene where they can compete in real-time.
+3. **Real-Time Updates:** Game states and user interactions are synchronized in real-time using Socket.io.
+
+## Contributing
+
+1. Fork the repository.
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`).
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`).
+4. Push to the branch (`git push origin feature/AmazingFeature`).
+5. Open a pull request.
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+## Acknowledgements
+
+- Inspired by classic Pokémon games.
+- Special thanks to the open-source community for various libraries and tools used.
+- Battle outcomes powered by Google’s Gemini AI (You'll need a key for that, or just use another AI model).
